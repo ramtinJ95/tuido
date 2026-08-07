@@ -1,0 +1,10 @@
+# Planning/design notes — local only, never committed
+PLAN.md
+
+# Build output
+/tuido
+/dist/
+
+# Go
+*.test
+*.out
