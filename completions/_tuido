@@ -1,0 +1,79 @@
+#compdef tuido
+# Hand-written because tuido has ten commands and a switch statement. This is
+# the whole cost of not depending on cobra.
+
+_tuido_lists() {
+  local -a lists
+  lists=(${(f)"$(tuido _lists 2>/dev/null)"}) || return
+  _describe -t lists 'list' lists
+}
+
+_tuido_workspaces() {
+  local -a wss
+  wss=(${(f)"$(tuido _workspaces 2>/dev/null)"}) || return
+  _describe -t workspaces 'workspace' wss
+}
+
+_tuido() {
+  local -a commands
+  commands=(
+    'init:first-run setup'
+    'add:capture a task'
+    'done:mark a task done'
+    'sort:reorder tasks within their blocks'
+    'ls:show actionable tasks'
+    'open:open a list in $EDITOR'
+    'path:print the resolved file path'
+    'use:switch or show the current workspace'
+    'sync:fetch, rebase and push'
+    'id:stamp a short id on a task'
+  )
+
+  _arguments -C '1: :->cmd' '*:: :->args'
+
+  case $state in
+    cmd) _describe -t commands 'tuido command' commands ;;
+    args)
+      case $words[1] in
+        add)
+          _arguments \
+            '(-p --prio)'{-p,--prio}'[priority]:priority:(highest high medium normal low lowest)' \
+            '(-d --due)'{-d,--due}'[due date]:when:(today tomorrow week monday tuesday wednesday thursday friday saturday sunday)' \
+            '(-t --tag)'{-t,--tag}'[tag]:tag:' \
+            '(-l --list)'{-l,--list}'[destination list]:list:_tuido_lists' \
+            '(-w --workspace)'{-w,--workspace}'[workspace]:workspace:_tuido_workspaces' \
+            '--all[search every workspace]' \
+            '*:text:'
+          ;;
+        sort)
+          _arguments \
+            '--by[sort key]:key:(prio due created none)' \
+            '--all[sort every workspace]' \
+            '(-w --workspace)'{-w,--workspace}'[workspace]:workspace:_tuido_workspaces' \
+            '1:list:_tuido_lists'
+          ;;
+        ls)
+          _arguments \
+            '--all[show everything]' \
+            '(-t --tag)'{-t,--tag}'[tag]:tag:' \
+            '--due[due on or before]:when:(today tomorrow week)' \
+            '(-w --workspace)'{-w,--workspace}'[workspace]:workspace:_tuido_workspaces' \
+            '1:list:_tuido_lists'
+          ;;
+        open|path) _arguments '--all[search every workspace]' '1:list:_tuido_lists' ;;
+        use)       _arguments '1:workspace:_tuido_workspaces' ;;
+        sync)      _arguments '--status[print state without touching the network]' ;;
+        init)
+          _arguments \
+            '--root[todo root]:directory:_files -/' \
+            '--workspace[first workspace]:name:' \
+            '--git[initialise git]' '--no-git[do not initialise git]' \
+            '--remote[git remote]:url:' \
+            '--force[overwrite an existing config]'
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_tuido "$@"
