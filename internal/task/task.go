@@ -315,6 +315,23 @@ func (t *Task) setDate(field **Date, d *Date) {
 	t.dirty = true
 }
 
+// SetStart sets or clears the start date.
+func (t *Task) SetStart(d *Date) { t.setDate(&t.Start, d) }
+
+// SetScheduled sets or clears the scheduled date.
+func (t *Task) SetScheduled(d *Date) { t.setDate(&t.Scheduled, d) }
+
+// SetDesc replaces the description. Tags is re-derived, since Desc is
+// authoritative for it.
+func (t *Task) SetDesc(desc string) {
+	if t.Desc == desc {
+		return
+	}
+	t.Desc = desc
+	t.Tags = extractTags(t.Desc)
+	t.dirty = true
+}
+
 // SetID sets the 🆔 field.
 func (t *Task) SetID(id string) {
 	if t.ID == id {
