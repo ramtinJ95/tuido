@@ -21,6 +21,10 @@ func expand(t *testing.T, in string) (string, []string) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
+	f, _, err = fixCheckboxes(f, fmtNow)
+	if err != nil {
+		t.Fatalf("fixCheckboxes: %v", err)
+	}
 	_, warnings := expandFile(f, fmtNow)
 	return string(f.Bytes()), warnings
 }
@@ -84,6 +88,30 @@ func TestExpandShorthand(t *testing.T) {
 		{"unrewritable task is skipped",
 			"- [ ] x ⏫ ⏫ :due monday\n",
 			"- [ ] x ⏫ ⏫ :due monday\n", 1},
+		{"new stamps created and nothing else",
+			"- [ ] test task :new\n",
+			"- [ ] test task ➕ 2026-08-08\n", 0},
+		{"new with created already set stays literal",
+			"- [ ] x :new ➕ 2026-01-01\n",
+			"- [ ] x :new ➕ 2026-01-01\n", 1},
+		{"empty checkbox becomes a task and is stamped",
+			"- [] test task\n",
+			"- [ ] test task ➕ 2026-08-08\n", 0},
+		{"empty checkbox with shorthand expands too",
+			"- [] x :p2 :due monday\n",
+			"- [ ] x ⏫ 📅 2026-08-10 ➕ 2026-08-08\n", 0},
+		{"empty checkbox keeps an existing created date",
+			"- [] x ➕ 2026-01-01\n",
+			"- [ ] x ➕ 2026-01-01\n", 0},
+		{"empty checkbox as an indented subtask is fixed",
+			"- [ ] parent\n  - [] child\n",
+			"- [ ] parent\n  - [ ] child ➕ 2026-08-08\n", 0},
+		{"empty checkbox in a fence is untouched",
+			"```\n- [] x\n```\n",
+			"```\n- [] x\n```\n", 0},
+		{"empty checkbox glued to text is not a checkbox",
+			"- []byte is a slice\n",
+			"- []byte is a slice\n", 0},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -19,11 +20,17 @@ import (
 //	:due    <when>     📅
 //	:start  <when>     🛫
 //	:sched  <when>     ⏳
+//	:new               nothing but the ➕ created stamp
 //
 // <when> is one token, anything parseWhen accepts. A token that cannot apply —
 // field already set, bad or missing value, unknown key — stays in the text
 // verbatim and is reported, matching how parseFields treats malformed emoji
 // fields. Because consumed tokens are removed, running fmt twice is a no-op.
+//
+// fmt also repairs `- []` into `- [ ]`. The empty checkbox is invisible to
+// every task parser (including Obsidian), so a typo there silently demotes a
+// task to prose; treating it as the lazy way to type a new task makes that
+// state impossible and stamps the line as created today.
 
 // cmdFmt expands shorthand. `tuido fmt -` filters stdin to stdout, for editor
 // integration; otherwise it rewrites lists in place, like sort.
@@ -56,18 +63,26 @@ func cmdFmt(args []string) error {
 		if err != nil {
 			return err
 		}
+		f, fixed, err := fixCheckboxes(f, now)
+		if err != nil {
+			return err
+		}
 		applied, warnings := expandFile(f, now)
 		for _, w := range warnings {
 			fmt.Println(w)
 		}
-		if !f.Dirty() {
+		if !f.Dirty() && fixed == 0 {
 			continue
 		}
 		if err := a.st.Write(f); err != nil {
 			return err
 		}
 		touched++
-		fmt.Printf("✓ fmt %s (%d expanded)\n", l.Ref(), applied)
+		if fixed > 0 {
+			fmt.Printf("✓ fmt %s (%d expanded, %d checkboxes fixed)\n", l.Ref(), applied, fixed)
+		} else {
+			fmt.Printf("✓ fmt %s (%d expanded)\n", l.Ref(), applied)
+		}
 		a.commit(l.Path, fmt.Sprintf("fmt: %s", l.Ref()))
 	}
 	if touched == 0 {
@@ -87,12 +102,52 @@ func fmtStdin() error {
 	if err != nil {
 		return err // ErrConflicted exits 3; the caller must not use the output
 	}
-	_, warnings := expandFile(f, time.Now())
+	now := time.Now()
+	f, _, err = fixCheckboxes(f, now)
+	if err != nil {
+		return err
+	}
+	_, warnings := expandFile(f, now)
 	for _, w := range warnings {
 		fmt.Fprintln(os.Stderr, w)
 	}
 	_, err = os.Stdout.Write(f.Bytes())
 	return err
+}
+
+var emptyBoxRE = regexp.MustCompile(`^([ \t]*)([-*+]) \[\]( .*)?$`)
+
+// fixCheckboxes turns `- []` lines into real `- [ ]` tasks and stamps them as
+// created now — the empty box only ever means a task typed the lazy way, and
+// leaving it would keep the line invisible to every command. Fixed lines force
+// a re-parse, so the returned file replaces the argument. Fences are excluded
+// by construction: this only looks at prose and continuation lines.
+func fixCheckboxes(f *task.File, now time.Time) (*task.File, int, error) {
+	var fixed []int
+	for i := range f.Lines {
+		ln := &f.Lines[i]
+		if ln.Kind != task.LineOther && ln.Kind != task.LineTaskCont {
+			continue
+		}
+		if m := emptyBoxRE.FindStringSubmatch(ln.Raw); m != nil {
+			ln.Raw = m[1] + m[2] + " [ ]" + m[3]
+			fixed = append(fixed, i)
+		}
+	}
+	if len(fixed) == 0 {
+		return f, 0, nil
+	}
+	nf, err := task.Parse(f.Path, f.Bytes())
+	if err != nil {
+		return nil, 0, err
+	}
+	d := task.DateFromTime(now)
+	for _, i := range fixed {
+		if t := nf.Lines[i].Task; t != nil && t.Created == nil {
+			t.SetCreated(&d)
+		}
+	}
+	return nf, len(fixed), nil
 }
 
 // expandFile expands every task carrying shorthand and flags field markers on
@@ -155,6 +210,16 @@ func expandTask(t *task.Task, now time.Time) (applied int, warnings []string) {
 			if !setPrio(p) {
 				out = append(out, tok)
 			}
+			continue
+		}
+
+		if key == "new" {
+			if t.Created != nil {
+				warn("%s: created already set — left as text", tok)
+				out = append(out, tok)
+				continue
+			}
+			applied++
 			continue
 		}
 
