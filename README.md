@@ -23,6 +23,69 @@ $ tuido done drain
 ✓ done: Fix ALB drain timeout → work/oncall
 ```
 
+## What `sort` does
+
+The command worth seeing before you install anything. It reorders task lines —
+open before done, unblocked before blocked, then priority, then due date — and
+changes nothing else about the file.
+
+**A file with no headings is one block**, so the whole list is ordered:
+
+```markdown
+- [ ] Chase SRE on cutover
+- [x] Draft the runbook ✅ 2026-08-05
+- [ ] Fix ALB drain timeout ⏫ 📅 2026-08-09
+- [ ] Rotate vault certs 🔼 📅 2026-08-14
+```
+
+```console
+$ tuido sort oncall
+✓ sorted work/oncall (4 moved, by prio)
+```
+
+```markdown
+- [ ] Fix ALB drain timeout ⏫ 📅 2026-08-09
+- [ ] Rotate vault certs 🔼 📅 2026-08-14
+- [ ] Chase SRE on cutover
+- [x] Draft the runbook ✅ 2026-08-05
+```
+
+**Add headings and it sorts within them.** Headings, prose, blank lines and code
+fences are fences: nothing crosses one, so a task never leaves the section you
+filed it under. The whole diff of a sort on a structured note is the moves
+themselves —
+
+```diff
+  # Oncall
+
+  Rotation ends Friday.
+
+- - [ ] Chase SRE on cutover
+  - [ ] Fix ALB drain timeout ⏫ 📅 2026-08-09
++ - [ ] Chase SRE on cutover
+  - [x] Draft the runbook ✅ 2026-08-05
+
+  ## Later
+
+- - [ ] Write the postmortem
+  - [ ] Rotate vault certs 🔼 📅 2026-08-14
++ - [ ] Write the postmortem
+```
+
+— and running it again produces no diff at all:
+
+```console
+$ tuido sort oncall
+· already sorted
+```
+
+That idempotence is what makes it safe to bind to save-on-write or a git hook:
+your history records the tasks you changed, not the formatting.
+
+`--by due` or `--by created` picks a different key for one run; a file can fix
+its own with a `<!-- tuido: sort=due -->` marker, or opt out entirely with
+`sort=none`.
+
 ## Install
 
 ```sh
@@ -74,7 +137,7 @@ from a cache file, so a slow or unreachable GitHub can't make `tuido ls` hang.
 When there's something newer you get one line above your normal output:
 
 ```
-⚠ tuido v0.2.0 is available (you have v0.1.1) — run `tuido upgrade`
+⚠ tuido v0.2.1 is available (you have v0.2.0) — run `tuido upgrade`
 ```
 
 Nothing is ever downloaded or replaced without you asking. `upgrade` fetches
@@ -143,6 +206,7 @@ tasks:
 - `~/.config/tuido/config.toml`
 - `~/.local/state/tuido/context` — the current workspace
 - `~/.cache/tuido/sync.json` — sync state
+- `~/.cache/tuido/update.json` — the cached answer to "is there a newer release?"
 
 Anything that should travel *with* your tasks goes in a per-file marker comment,
 which syncs for free:
@@ -177,10 +241,9 @@ emoji survive untouched, and a diff is the size of the actual change. This is
 enforced by a golden corpus and a fuzzer asserting both round-trip identity and
 canonical stability.
 
-**Structure you wrote is inviolable.** Headings, prose, blank lines and code
-fences are fences. `sort` reorders task lines *within* a run of them and nothing
-else — a task-shaped line inside a ``` block is never touched, and nested
-subtasks travel with their parent. Sorting twice produces identical bytes.
+**Structure you wrote is inviolable**, as the sort example above shows. Two
+corollaries that example does not: a task-shaped line inside a fenced code
+block is never touched, and nested subtasks travel with their parent.
 
 **Never block on the network.** Git is automatic but asynchronous: the local
 commit is synchronous and offline, while fetch and push happen in a detached
@@ -192,7 +255,7 @@ ambiguous query gets a picker or an error, never a silently-chosen default. A
 file with conflict markers is refused outright. A line tuido cannot rewrite
 without changing its meaning is reported instead of mangled.
 
-## Not in v1
+## Not implemented
 
 Recurrence *generation* (`🔁` rules are parsed and preserved), `🏁` actions,
 archiving, dictation, and sorting across blank lines. None of them require a
@@ -209,7 +272,7 @@ make check    # vet + test + gofmt
 Releasing is one command on your own machine — there is no CI:
 
 ```sh
-make release TAG=v0.2.0
+make release TAG=v0.2.1
 ```
 
 That tags, pushes, cross-compiles `darwin`/`linux` × `arm64`/`amd64`, writes

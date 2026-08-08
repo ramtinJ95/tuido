@@ -242,7 +242,7 @@ type Task struct {
 
 	Created, Start, Scheduled, Due, Completed, CancelledOn *Date
 
-	Recurrence   string   // 🔁 raw rule text, uninterpreted in v1
+	Recurrence   string   // 🔁 raw rule text, preserved but not yet interpreted
 	ID           string   // 🆔
 	BlockedBy    []string // ⛔
 	OnCompletion string   // 🏁
