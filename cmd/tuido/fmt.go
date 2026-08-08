@@ -21,16 +21,23 @@ import (
 //	:start  <when>     🛫
 //	:sched  <when>     ⏳
 //	:new               nothing but the ➕ created stamp
+//	:done              [x] plus ✅ today
+//	:drop | :cancel    [-] plus ❌ today
 //
 // <when> is one token, anything parseWhen accepts. A token that cannot apply —
 // field already set, bad or missing value, unknown key — stays in the text
 // verbatim and is reported, matching how parseFields treats malformed emoji
 // fields. Because consumed tokens are removed, running fmt twice is a no-op.
 //
-// fmt also repairs `- []` into `- [ ]`. The empty checkbox is invisible to
-// every task parser (including Obsidian), so a typo there silently demotes a
-// task to prose; treating it as the lazy way to type a new task makes that
-// state impossible and stamps the line as created today.
+// Capture tokens mark the line as freshly typed, so applying one stamps ➕
+// today on a line that has no created date. :done and :drop do not: completing
+// a task says nothing about when it was written.
+//
+// fmt also normalises lazily typed task lines. `- []` is repaired to `- [ ]`,
+// and a bare `- some task` bullet gets its checkbox inserted — a dash bullet in
+// a todo list only ever means a task, and both forms are invisible to every
+// task parser until fixed. Normalised lines are stamped as created today.
+// `*` and `+` bullets are left alone, which keeps a way to write plain notes.
 
 // cmdFmt expands shorthand. `tuido fmt -` filters stdin to stdout, for editor
 // integration; otherwise it rewrites lists in place, like sort.
@@ -79,7 +86,7 @@ func cmdFmt(args []string) error {
 		}
 		touched++
 		if fixed > 0 {
-			fmt.Printf("✓ fmt %s (%d expanded, %d checkboxes fixed)\n", l.Ref(), applied, fixed)
+			fmt.Printf("✓ fmt %s (%d expanded, %d normalised)\n", l.Ref(), applied, fixed)
 		} else {
 			fmt.Printf("✓ fmt %s (%d expanded)\n", l.Ref(), applied)
 		}
@@ -115,13 +122,20 @@ func fmtStdin() error {
 	return err
 }
 
-var emptyBoxRE = regexp.MustCompile(`^([ \t]*)([-*+]) \[\]( .*)?$`)
+var (
+	emptyBoxRE   = regexp.MustCompile(`^([ \t]*)([-*+]) \[\]( .*)?$`)
+	bareBulletRE = regexp.MustCompile(`^([ \t]*)- (\S.*)$`)
+	dashRuleRE   = regexp.MustCompile(`^[ \t]*-[ \t-]*$`)
+)
 
-// fixCheckboxes turns `- []` lines into real `- [ ]` tasks and stamps them as
-// created now — the empty box only ever means a task typed the lazy way, and
-// leaving it would keep the line invisible to every command. Fixed lines force
-// a re-parse, so the returned file replaces the argument. Fences are excluded
-// by construction: this only looks at prose and continuation lines.
+// fixCheckboxes turns lazily typed task lines into real `- [ ]` tasks and
+// stamps them as created now: `- []` gets its missing space, and a bare
+// `- some task` dash bullet gets its checkbox. Both forms are invisible to
+// every command until fixed. A `- [...` bullet is left alone — it is a
+// checkbox attempt or a markdown link, never a bare task — and so are `*` and
+// `+` bullets, which is the deliberate way to write a plain note. Fixed lines
+// force a re-parse, so the returned file replaces the argument. Fences are
+// excluded by construction: this only looks at prose and continuation lines.
 func fixCheckboxes(f *task.File, now time.Time) (*task.File, int, error) {
 	var fixed []int
 	for i := range f.Lines {
@@ -131,6 +145,14 @@ func fixCheckboxes(f *task.File, now time.Time) (*task.File, int, error) {
 		}
 		if m := emptyBoxRE.FindStringSubmatch(ln.Raw); m != nil {
 			ln.Raw = m[1] + m[2] + " [ ]" + m[3]
+			fixed = append(fixed, i)
+			continue
+		}
+		if dashRuleRE.MatchString(ln.Raw) {
+			continue // a `- - -` horizontal rule is not a task
+		}
+		if m := bareBulletRE.FindStringSubmatch(ln.Raw); m != nil && m[2][0] != '[' {
+			ln.Raw = m[1] + "- [ ] " + m[2]
 			fixed = append(fixed, i)
 		}
 	}
@@ -175,9 +197,10 @@ func expandFile(f *task.File, now time.Time) (applied int, warnings []string) {
 
 // expandTask applies the shorthand tokens in t's description. Tokens that
 // apply are consumed; the rest of the description is preserved word for word.
-// If anything applied and the task has no ➕ date, today is stamped: shorthand
-// marks the line as freshly captured. Bare task lines are never stamped —
-// that would backdate tasks that predate tuido.
+// If a capture token applied and the task has no ➕ date, today is stamped:
+// capture shorthand marks the line as freshly typed. Bare task lines and
+// lines closed with :done/:drop are never stamped — that would backdate
+// tasks that predate tuido.
 func expandTask(t *task.Task, now time.Time) (applied int, warnings []string) {
 	warn := func(format string, args ...any) {
 		warnings = append(warnings, fmt.Sprintf("⚠ %s:%d: ", t.Path, t.Line)+fmt.Sprintf(format, args...))
@@ -186,6 +209,7 @@ func expandTask(t *task.Task, now time.Time) (applied int, warnings []string) {
 	fields := strings.Fields(t.Desc)
 	var out []string
 	prioSet := t.Priority != task.Normal
+	capture := 0 // tokens that mark the line as freshly typed
 	for i := 0; i < len(fields); i++ {
 		tok := fields[i]
 		if !isShorthandToken(tok) {
@@ -202,6 +226,7 @@ func expandTask(t *task.Task, now time.Time) (applied int, warnings []string) {
 			t.SetPriority(p)
 			prioSet = true
 			applied++
+			capture++
 			return true
 		}
 
@@ -220,6 +245,25 @@ func expandTask(t *task.Task, now time.Time) (applied int, warnings []string) {
 				continue
 			}
 			applied++
+			capture++
+			continue
+		}
+
+		if key == "done" || key == "drop" || key == "cancel" {
+			if t.Completed != nil || t.CancelledOn != nil {
+				warn("%s: task already closed — left as text", tok)
+				out = append(out, tok)
+				continue
+			}
+			d := task.DateFromTime(now)
+			if key == "done" {
+				t.SetState(task.Done)
+				t.SetCompleted(&d)
+			} else {
+				t.SetState(task.Cancelled)
+				t.SetCancelledOn(&d)
+			}
+			applied++ // deliberately not capture: closing says nothing about when it was written
 			continue
 		}
 
@@ -277,13 +321,14 @@ func expandTask(t *task.Task, now time.Time) (applied int, warnings []string) {
 		}
 		set(&d)
 		applied++
+		capture++
 	}
 
 	if applied == 0 {
 		return 0, warnings
 	}
 	t.SetDesc(strings.Join(out, " "))
-	if t.Created == nil {
+	if capture > 0 && t.Created == nil {
 		d := task.DateFromTime(now)
 		t.SetCreated(&d)
 	}
