@@ -107,10 +107,24 @@ $ tuido init
 todo root  [~/todo]: ~/notes/todo
   initialize a git repo there? [Y/n] y
   git remote (blank to skip): git@github.com:you/todo.git
+  keep tuido's automatic commits off your GitHub contribution graph? [Y/n] y
+  commits will be authored as tuido@localhost (repo-local)
 first workspace  [work]: work
 
 ✓ wrote ~/.config/tuido/config.toml
 ✓ context set to `work`
+```
+
+The contribution-graph question exists because tuido commits on every edit, and
+GitHub counts a commit toward your profile only when its author email is linked
+to your account. Saying yes sets a repo-local `user.email` GitHub does not
+know, so thousands of autosave commits stay off the graph — your global git
+identity and every other repo are untouched. The setting lives in
+`.git/config`, which never syncs, so answer it on each machine. To opt an
+existing repo in:
+
+```sh
+git -C ~/notes/todo config user.email tuido@localhost
 ```
 
 On a second machine, point `--remote` at the repo you already have. It clones

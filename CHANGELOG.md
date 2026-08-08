@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+
+- `tuido init` now asks whether to keep tuido's automatic commits off your
+  GitHub contribution graph (flag equivalent: `--commit-email`). Saying yes
+  sets a repo-local author email GitHub cannot link to your account, so
+  autosave commits never count. The setting is per-clone; opt an existing
+  repo in with `git -C <root> config user.email tuido@localhost`.
+
 ## [0.4.0] - 2026-08-08
 
 ### Added
