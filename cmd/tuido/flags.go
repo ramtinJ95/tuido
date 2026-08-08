@@ -152,7 +152,7 @@ func registerFlags(name string, fs *pflag.FlagSet) {
 		registerSync(fs)
 	case "use":
 		registerCommon(fs)
-	case "done", "path", "id":
+	case "done", "path", "id", "fmt":
 		registerScope(fs)
 	case "upgrade":
 		registerUpgrade(fs)

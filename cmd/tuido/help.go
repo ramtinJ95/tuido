@@ -105,6 +105,33 @@ var helps = map[string]help{
 			"tuido sort --all",
 		},
 	},
+	"fmt": {
+		summary: "expand shorthand into canonical fields",
+		synopsis: []string{
+			"tuido fmt [list] [flags]    rewrite lists in place",
+			"tuido fmt -                 filter stdin to stdout, for editor integration",
+		},
+		notes: []string{
+			"Expands the plain-ASCII shorthand into the emoji dialect, so fields can",
+			"be typed without leaving the keyboard:",
+			"",
+			"  :p1 … :p5        priority, highest → lowest",
+			"  :prio <v>        priority by name or digit 1–5",
+			"  :due <when>      due       (YYYY-MM-DD | today | tomorrow | week | <weekday>)",
+			"  :start <when>    start     (same values)",
+			"  :sched <when>    scheduled (same values)",
+			"",
+			"A task that had shorthand applied is stamped with a creation date if it",
+			"lacks one; bare lines are never stamped. A token that cannot apply —",
+			"field already set, bad value, unknown key — stays in the text and is",
+			"reported. Running fmt twice changes nothing.",
+		},
+		examples: []string{
+			"tuido fmt",
+			"tuido fmt oncall",
+			"printf -- '- [ ] rotate certs :p2 :due friday\\n' | tuido fmt -",
+		},
+	},
 	"ls": {
 		summary: "show actionable tasks",
 		synopsis: []string{

@@ -45,6 +45,8 @@ func run(args []string) int {
 		err = cmdDone(rest)
 	case "sort":
 		err = cmdSort(rest)
+	case "fmt":
+		err = cmdFmt(rest)
 	case "ls", "list":
 		err = cmdLs(rest)
 	case "open", "o":
@@ -206,6 +208,7 @@ func usage(w *os.File) {
   tuido add   [flags] <text…>      capture a task  (-p prio  -d due  -t tag  -l list)
   tuido done  <fuzzy…>             mark a task done
   tuido sort  [list] [--by …]      reorder tasks within their blocks
+  tuido fmt   [list] | fmt -       expand :p2 / :due monday shorthand into fields
   tuido ls    [list] [--all]       show actionable tasks
   tuido open  [query] [--root]     open a list, or the whole repo, in $EDITOR
   tuido path  [query]              print the resolved file path
