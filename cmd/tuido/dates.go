@@ -30,8 +30,13 @@ var weekdays = map[string]time.Weekday{
 // `-d friday` is next Friday, not today. That rule is surprising exactly once,
 // so it is documented in --help as well as here.
 func parseWhen(s string) (task.Date, error) {
+	return parseWhenAt(s, time.Now())
+}
+
+// parseWhenAt is parseWhen with an explicit clock, so relative dates are
+// testable.
+func parseWhenAt(s string, now time.Time) (task.Date, error) {
 	s = strings.ToLower(strings.TrimSpace(s))
-	now := time.Now()
 
 	if d, ok := task.ParseDate(s); ok {
 		return d, nil
