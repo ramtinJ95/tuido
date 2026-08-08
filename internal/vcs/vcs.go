@@ -219,10 +219,10 @@ func (r *Repo) Commit(path, message string) error {
 	if out, err := r.git("add", "--", rel); err != nil {
 		return fmt.Errorf("git add: %s", firstLine(out))
 	}
-	if out, err := r.git("diff", "--cached", "--quiet"); err == nil && out == "" {
+	if out, err := r.git("diff", "--cached", "--quiet", "--", rel); err == nil && out == "" {
 		return nil // nothing staged; not an error
 	}
-	if out, err := r.git("commit", "--quiet", "-m", message); err != nil {
+	if out, err := r.git("commit", "--quiet", "--only", "-m", message, "--", rel); err != nil {
 		return fmt.Errorf("git commit: %s", firstLine(out))
 	}
 

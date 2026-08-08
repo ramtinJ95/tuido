@@ -22,6 +22,10 @@ func TestCommitPlumbingCommitsOneFile(t *testing.T) {
 	gitOut(t, e.root, "config", "user.name", "tuido")
 	gitOut(t, e.root, "config", "user.email", "tuido@example.com")
 
+	// A separately staged file must stay staged and out of the save commit.
+	e.write("work/other.md", "- [ ] staged separately\n")
+	gitOut(t, e.root, "add", "work/other.md")
+
 	// A brand-new untracked file, as if just saved from the editor.
 	e.write("work/data.md", "- [ ] typed in the editor\n")
 	e.mustRun("_commit", filepath.Join(e.root, "work", "data.md"))
@@ -30,9 +34,14 @@ func TestCommitPlumbingCommitsOneFile(t *testing.T) {
 	if !strings.Contains(log, "edit: work/data") {
 		t.Errorf("commit missing from log:\n%s", log)
 	}
-	// Only the named file is committed; init's untracked inbox is not swept up.
+	if names := strings.TrimSpace(gitOut(t, e.root, "show", "--format=", "--name-only", "HEAD")); names != "work/data.md" {
+		t.Errorf("commit contains %q, want only work/data.md", names)
+	}
+	// Only the named file is committed; staged and untracked files are not swept up.
 	if st := gitOut(t, e.root, "status", "--short"); strings.Contains(st, "data.md") {
 		t.Errorf("data.md still dirty after _commit:\n%s", st)
+	} else if !strings.Contains(st, "A  work/other.md") {
+		t.Errorf("other.md no longer staged after _commit:\n%s", st)
 	}
 
 	// Saving again with no changes must not create an empty commit.
