@@ -21,6 +21,7 @@ _tuido() {
     'add:capture a task'
     'done:mark a task done'
     'sort:reorder tasks within their blocks'
+    'fmt:expand shorthand into canonical fields'
     'ls:show actionable tasks'
     'open:open a list in $EDITOR'
     'path:print the resolved file path'
@@ -58,6 +59,12 @@ _tuido() {
             '--all[show everything]' \
             '(-t --tag)'{-t,--tag}'[tag]:tag:' \
             '--due[due on or before]:when:(today tomorrow week)' \
+            '(-w --workspace)'{-w,--workspace}'[workspace]:workspace:_tuido_workspaces' \
+            '1:list:_tuido_lists'
+          ;;
+        fmt)
+          _arguments \
+            '--all[format every workspace]' \
             '(-w --workspace)'{-w,--workspace}'[workspace]:workspace:_tuido_workspaces' \
             '1:list:_tuido_lists'
           ;;
