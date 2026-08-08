@@ -79,8 +79,18 @@ exits 1, so every command stays scriptable.
 Flags may appear before or after the text — `tuido add rotate certs -p high`
 works. `--` ends flag parsing.
 
+Every command documents itself, with argument syntax and worked examples:
+
+```sh
+tuido help              # the command list
+tuido help add          # one command, in detail
+tuido add --help        # identical
+```
+
 Exit codes: `0` ok, `1` user error, `2` internal, `3` file conflicted,
-`4` not initialised.
+`4` not initialised. Help exits `0`; a bad flag exits `1`. Errors go to stderr,
+output to stdout, and colour is used only when stdout is a terminal — so
+scripts and agents get clean, parseable output with no special flags.
 
 ## How it stores things
 

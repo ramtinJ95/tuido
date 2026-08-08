@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/pflag"
 	"golang.org/x/term"
 
 	"github.com/ramtinJ95/tuido/internal/store"
@@ -18,19 +17,12 @@ import (
 // cmdInit is first-run setup. Every prompt has a flag equivalent, so a dotfiles
 // bootstrap can run it non-interactively.
 func cmdInit(args []string) error {
-	fs := pflag.NewFlagSet("init", pflag.ContinueOnError)
-	fs.SetInterspersed(true)
-	var (
-		root      = fs.String("root", "", "todo root directory")
-		workspace = fs.String("workspace", "", "first workspace name (default \"work\")")
-		useGit    = fs.Bool("git", true, "initialise a git repo in the root")
-		noGit     = fs.Bool("no-git", false, "do not initialise a git repo")
-		remote    = fs.String("remote", "", "git remote; if it has commits, clone it instead of initialising")
-		force     = fs.Bool("force", false, "overwrite an existing config")
-	)
+	fs := newFlagSet("init")
+	fl := registerInit(fs)
 	if err := fs.Parse(args); err != nil {
-		return err
+		return flagErr(err)
 	}
+	root, workspace, useGit, noGit, remote, force := fl.root, fl.workspace, fl.git, fl.noGit, fl.remote, fl.force
 
 	interactive := term.IsTerminal(int(os.Stdin.Fd()))
 	in := bufio.NewReader(os.Stdin)

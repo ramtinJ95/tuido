@@ -6,8 +6,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/spf13/pflag"
-
 	"github.com/ramtinJ95/tuido/internal/match"
 	"github.com/ramtinJ95/tuido/internal/sortkey"
 	"github.com/ramtinJ95/tuido/internal/store"
@@ -17,20 +15,19 @@ import (
 // cmdSort reorders tasks within their blocks. It never crosses a fence, and
 // running it twice produces identical bytes.
 func cmdSort(args []string) error {
-	fs := pflag.NewFlagSet("sort", pflag.ContinueOnError)
-	root, ws := common(fs)
-	by := fs.String("by", "", "prio|due|created|none (default: the file's marker, else prio)")
-	all := fs.Bool("all", false, "sort every workspace")
+	fs := newFlagSet("sort")
+	fl := registerSort(fs)
 	if err := fs.Parse(args); err != nil {
-		return err
+		return flagErr(err)
 	}
+	by, all := fl.by, fl.all
 	if *by != "" {
 		if _, err := sortkey.ParseMode(*by); err != nil {
 			return uerr("%v", err)
 		}
 	}
 
-	a, err := openApp(*root, *ws)
+	a, err := openApp(*fl.root, *fl.ws)
 	if err != nil {
 		return err
 	}
@@ -94,18 +91,16 @@ func countSortable(f *task.File) int {
 
 // cmdOpen drops into the editor: a list, or the whole repo.
 func cmdOpen(args []string) error {
-	fs := pflag.NewFlagSet("open", pflag.ContinueOnError)
-	fs.SetInterspersed(true)
 	// Note: `open` spends --root on the documented boolean, so overriding the
 	// todo root for this command means TUIDO_ROOT.
-	ws := fs.StringP("workspace", "w", "", "workspace to search")
-	wholeRepo := fs.BoolP("root", "r", false, "open the repo root instead of a single list")
-	all := fs.Bool("all", false, "search every workspace")
+	fs := newFlagSet("open")
+	fl := registerOpen(fs)
 	if err := fs.Parse(args); err != nil {
-		return err
+		return flagErr(err)
 	}
+	wholeRepo, all := fl.wholeRepo, fl.all
 
-	a, err := openApp("", *ws)
+	a, err := openApp("", *fl.ws)
 	if err != nil {
 		return err
 	}

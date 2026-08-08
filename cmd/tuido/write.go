@@ -12,8 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/pflag"
-
 	"github.com/ramtinJ95/tuido/internal/match"
 	"github.com/ramtinJ95/tuido/internal/store"
 	"github.com/ramtinJ95/tuido/internal/task"
@@ -21,20 +19,14 @@ import (
 
 // cmdAdd captures a task. Flags may appear before or after the text.
 func cmdAdd(args []string) error {
-	fs := pflag.NewFlagSet("add", pflag.ContinueOnError)
-	root, ws := common(fs)
-	var (
-		prio = fs.StringP("prio", "p", "", "highest|high|medium|low|lowest")
-		due  = fs.StringP("due", "d", "", "YYYY-MM-DD | today | tomorrow | week | <weekday>")
-		tags = fs.StringSliceP("tag", "t", nil, "tag to append (repeatable)")
-		list = fs.StringP("list", "l", "", "destination list, or list/section")
-		all  = fs.Bool("all", false, "search every workspace for the destination list")
-	)
+	fs := newFlagSet("add")
+	fl := registerAdd(fs)
 	if err := fs.Parse(args); err != nil {
-		return err
+		return flagErr(err)
 	}
+	prio, due, tags, list, all := fl.prio, fl.due, fl.tags, fl.list, fl.all
 
-	a, err := openApp(*root, *ws)
+	a, err := openApp(*fl.root, *fl.ws)
 	if err != nil {
 		return err
 	}
@@ -187,17 +179,17 @@ func runEditor(args ...string) error {
 // cmdDone marks a task done. It does not move the line: sinking happens on sort,
 // so the diff stays one line.
 func cmdDone(args []string) error {
-	fs := pflag.NewFlagSet("done", pflag.ContinueOnError)
-	root, ws := common(fs)
-	all := fs.Bool("all", false, "search every workspace")
+	fs := newFlagSet("done")
+	fl := registerScope(fs)
 	if err := fs.Parse(args); err != nil {
-		return err
+		return flagErr(err)
 	}
+	all := fl.all
 	if fs.NArg() == 0 && !match.Interactive() {
-		return uerr("usage: tuido done <fuzzy text…>")
+		return uerr("usage: tuido done <fuzzy text…>  (see `tuido help done`)")
 	}
 
-	a, err := openApp(*root, *ws)
+	a, err := openApp(*fl.root, *fl.ws)
 	if err != nil {
 		return err
 	}
@@ -242,13 +234,16 @@ func cmdDone(args []string) error {
 // cmdID stamps a short random id on a task, so it can be named by ⛔. Never
 // called automatically: this is the opt-in escape hatch.
 func cmdID(args []string) error {
-	fs := pflag.NewFlagSet("id", pflag.ContinueOnError)
-	root, ws := common(fs)
-	all := fs.Bool("all", false, "search every workspace")
+	fs := newFlagSet("id")
+	fl := registerScope(fs)
 	if err := fs.Parse(args); err != nil {
-		return err
+		return flagErr(err)
 	}
-	a, err := openApp(*root, *ws)
+	all := fl.all
+	if fs.NArg() == 0 && !match.Interactive() {
+		return uerr("usage: tuido id <fuzzy text…>  (see `tuido help id`)")
+	}
+	a, err := openApp(*fl.root, *fl.ws)
 	if err != nil {
 		return err
 	}

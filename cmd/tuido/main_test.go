@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/pflag"
 )
 
 // The test binary doubles as the tuido binary: with TUIDO_TEST_SUBPROCESS set
@@ -431,6 +433,80 @@ func TestInitRemoteAdoptsAnExistingRepo(t *testing.T) {
 	r = third.run("init", "--root", occupied, "--remote", origin)
 	if r.code != 1 || !strings.Contains(r.stderr, "not empty") {
 		t.Errorf("clobber refusal: exit %d, stderr %q", r.code, r.stderr)
+	}
+}
+
+// Help must be discoverable and must exit 0. A non-zero exit here tells any
+// caller probing the CLI that the command is broken.
+func TestHelpIsDiscoverableAndExitsZero(t *testing.T) {
+	e := newEnv(t)
+
+	for _, args := range [][]string{{"-h"}, {"--help"}, {"help"}} {
+		r := e.run(args...)
+		if r.code != 0 {
+			t.Errorf("tuido %v exited %d, want 0", args, r.code)
+		}
+		if !strings.Contains(r.stdout, "tuido add") || !strings.Contains(r.stdout, "Exit codes:") {
+			t.Errorf("tuido %v did not list the commands:\n%s", args, r.stdout)
+		}
+		if !strings.Contains(r.stdout, "--help") {
+			t.Errorf("tuido %v does not point at per-command help:\n%s", args, r.stdout)
+		}
+	}
+
+	// Every documented command answers both help forms, without needing config.
+	for _, name := range commandNames() {
+		for _, args := range [][]string{{name, "--help"}, {name, "-h"}, {"help", name}} {
+			r := e.run(args...)
+			if r.code != 0 {
+				t.Errorf("tuido %v exited %d, want 0\nstderr: %s", args, r.code, r.stderr)
+				continue
+			}
+			if r.stderr != "" {
+				t.Errorf("tuido %v wrote to stderr: %q", args, r.stderr)
+			}
+			for _, want := range []string{"tuido " + name, "Usage:", "Exit codes:"} {
+				if !strings.Contains(r.stdout, want) {
+					t.Errorf("tuido %v help missing %q:\n%s", args, want, r.stdout)
+				}
+			}
+		}
+	}
+}
+
+// The help text is the CLI's contract. If a flag exists it must be documented,
+// and if help claims a command exists it must be dispatchable.
+func TestHelpMatchesTheRealFlags(t *testing.T) {
+	e := newEnv(t)
+	for _, name := range commandNames() {
+		out := e.mustRun(name, "--help").stdout
+
+		fs := newFlagSet(name)
+		registerFlags(name, fs)
+		fs.VisitAll(func(f *pflag.Flag) {
+			if !strings.Contains(out, "--"+f.Name) {
+				t.Errorf("tuido %s --help omits --%s", name, f.Name)
+			}
+		})
+
+		if !strings.Contains(out, "Examples:") {
+			t.Errorf("tuido %s --help has no examples", name)
+		}
+		// An unknown command must not be reachable from the help listing.
+		if r := e.run(name, "--definitely-not-a-flag"); r.code != 1 {
+			t.Errorf("tuido %s with a bad flag exited %d, want 1 (user error)", name, r.code)
+		}
+	}
+}
+
+func TestHelpForUnknownCommand(t *testing.T) {
+	e := newEnv(t)
+	r := e.run("help", "frobnicate")
+	if r.code != 1 {
+		t.Errorf("exit = %d, want 1", r.code)
+	}
+	if !strings.Contains(r.stderr, "unknown command") {
+		t.Errorf("stderr = %q", r.stderr)
 	}
 }
 

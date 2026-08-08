@@ -16,16 +16,14 @@ import (
 // cmdLs shows actionable tasks: completed, cancelled, blocked, not-yet-started
 // and future-scheduled work is hidden, with a footer counting each reason.
 func cmdLs(args []string) error {
-	fs := pflag.NewFlagSet("ls", pflag.ContinueOnError)
-	root, ws := common(fs)
-	all := fs.Bool("all", false, "show everything, in every workspace")
-	tags := fs.StringSliceP("tag", "t", nil, "only tasks with this tag (repeatable)")
-	dueBy := fs.String("due", "", "only tasks due on or before this date (today|tomorrow|week|YYYY-MM-DD)")
+	fs := newFlagSet("ls")
+	fl := registerLs(fs)
 	if err := fs.Parse(args); err != nil {
-		return err
+		return flagErr(err)
 	}
+	all, tags, dueBy := fl.all, fl.tags, fl.dueBy
 
-	a, err := openApp(*root, *ws)
+	a, err := openApp(*fl.root, *fl.ws)
 	if err != nil {
 		return err
 	}
@@ -91,13 +89,13 @@ func matchesFilters(t *task.Task, tags []string, cutoff *task.Date) bool {
 // cmdPath prints the resolved absolute path and exits. It is the primitive
 // `open` is built on, and it makes `bat $(tuido path oncall)` work.
 func cmdPath(args []string) error {
-	fs := pflag.NewFlagSet("path", pflag.ContinueOnError)
-	root, ws := common(fs)
-	all := fs.Bool("all", false, "search every workspace")
+	fs := newFlagSet("path")
+	fl := registerScope(fs)
 	if err := fs.Parse(args); err != nil {
-		return err
+		return flagErr(err)
 	}
-	a, err := openApp(*root, *ws)
+	all := fl.all
+	a, err := openApp(*fl.root, *fl.ws)
 	if err != nil {
 		return err
 	}
@@ -144,12 +142,12 @@ func (a *app) resolveList(query string, all bool) (store.List, error) {
 // cmdUse switches the persisted workspace, or reports the current one and where
 // it came from — a stale context should be visible, not silent.
 func cmdUse(args []string) error {
-	fs := pflag.NewFlagSet("use", pflag.ContinueOnError)
-	root, ws := common(fs)
+	fs := newFlagSet("use")
+	fl := registerCommon(fs)
 	if err := fs.Parse(args); err != nil {
-		return err
+		return flagErr(err)
 	}
-	a, err := openApp(*root, *ws)
+	a, err := openApp(*fl.root, *fl.ws)
 	if err != nil {
 		return err
 	}
@@ -250,13 +248,13 @@ func cmdShow(args []string) error {
 
 // cmdSync is the blocking, verbose, on-demand counterpart to the background job.
 func cmdSync(args []string) error {
-	fs := pflag.NewFlagSet("sync", pflag.ContinueOnError)
-	root, ws := common(fs)
-	status := fs.Bool("status", false, "print sync state without touching the network")
+	fs := newFlagSet("sync")
+	fl := registerSync(fs)
 	if err := fs.Parse(args); err != nil {
-		return err
+		return flagErr(err)
 	}
-	a, err := openApp(*root, *ws)
+	status := fl.status
+	a, err := openApp(*fl.root, *fl.ws)
 	if err != nil {
 		return err
 	}

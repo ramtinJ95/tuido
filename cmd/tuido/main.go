@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/pflag"
 	"golang.org/x/term"
 
 	"github.com/ramtinJ95/tuido/internal/match"
@@ -64,7 +63,9 @@ func run(args []string) int {
 		err = cmdNames(cmd, rest)
 	case "internal-sync": // undocumented: the detached background job
 		err = cmdInternalSync(rest)
-	case "help", "-h", "--help":
+	case "help":
+		err = cmdHelp(rest)
+	case "-h", "--help":
 		usage(os.Stdout)
 		return exitOK
 	case "version", "--version":
@@ -76,7 +77,9 @@ func run(args []string) int {
 		return exitUser
 	}
 
-	if err == nil {
+	// Asking for help is not a failure. Exiting non-zero here would tell any
+	// caller probing the CLI that the command is broken.
+	if err == nil || errors.Is(err, errHelpRequested) {
 		return exitOK
 	}
 	code := exitCode(err)
@@ -131,14 +134,6 @@ type app struct {
 	st   *store.Store
 	repo *vcs.Repo
 	r    *render.Renderer
-}
-
-// common registers the flags every command accepts.
-func common(fs *pflag.FlagSet) (root, ws *string) {
-	fs.SetInterspersed(true) // flags may follow the text, which is how people type
-	root = fs.String("root", "", "override the todo root for this invocation")
-	ws = fs.StringP("workspace", "w", "", "workspace to operate on")
-	return root, ws
 }
 
 func openApp(root, ws string) (*app, error) {
@@ -213,5 +208,7 @@ func usage(w *os.File) {
 
 Flags may appear before or after the text; -- ends flag parsing.
 Exit codes: 0 ok, 1 user error, 2 internal, 3 file conflicted, 4 not initialised.
+
+Run "tuido help <command>" or "tuido <command> --help" for usage and examples.
 `)
 }
