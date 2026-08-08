@@ -7,6 +7,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-08-08
+
+### Added
+
+- Added the undocumented `tuido _commit <path>` plumbing command for editor
+  save hooks: it commits the one saved file with an `edit: <ref>` message and
+  kicks off the usual detached background push, so edits made in the editor
+  sync exactly like edits made through tuido commands. Documented the paired
+  `BufWritePre`/`BufWritePost` Neovim integration in the README.
+
 ## [0.3.1] - 2026-08-08
 
 ### Added
