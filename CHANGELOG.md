@@ -7,6 +7,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+
+- Added the `:done` and `:drop`/`:cancel` shorthand tokens: they close the
+  task (`[x]` or `[-]`) and stamp today's ✅/❌ date. Deliberately no ➕ stamp —
+  closing a task says nothing about when it was written.
+- `tuido fmt` now turns a bare `- some task` dash bullet into a checkboxed
+  task stamped as created today. `*` and `+` bullets and `- [...` lines
+  (markdown links, checkbox attempts) are never touched, so notes stay notes.
+
 ## [0.3.2] - 2026-08-08
 
 ### Added

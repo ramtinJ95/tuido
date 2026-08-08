@@ -254,25 +254,32 @@ and `tuido fmt` rewrites it to:
 | `:start <when>` | start date |
 | `:sched <when>` | scheduled date |
 | `:new` | nothing but the ➕ creation stamp |
+| `:done` | `[x]` plus ✅ today |
+| `:drop` / `:cancel` | `[-]` plus ❌ today |
 
 `<when>` is `YYYY-MM-DD`, `today`, `tomorrow`, `week` or a weekday name (the
 next strictly future one). Shorthand is input, never storage: the file only
 ever contains the emoji dialect, so Obsidian keeps working. A task that had
-shorthand applied gets a ➕ creation date if it lacks one — shorthand marks the
-line as freshly captured, and bare lines are never stamped, so pre-existing
-tasks are not backdated. A token that cannot apply (field already set, bad
-value, unknown key) stays in the text verbatim and is reported. Running `fmt`
-twice changes nothing.
+capture shorthand applied gets a ➕ creation date if it lacks one — shorthand
+marks the line as freshly captured, and bare lines are never stamped, so
+pre-existing tasks are not backdated. `:done` and `:drop` deliberately don't
+stamp ➕ either: closing a task says nothing about when it was written. A token
+that cannot apply (field already set, bad value, unknown key) stays in the text
+verbatim and is reported. Running `fmt` twice changes nothing.
 
-The laziest way to type a new task is an empty checkbox:
+The laziest way to type a new task is a bare dash bullet:
 
 ```markdown
-- [] rotate the token for x
+- rotate the token for x
 ```
 
-`- []` is invisible to every task parser — including Obsidian — so `fmt`
-repairs it to `- [ ]` and stamps it as created today. Outside `fmt`, nothing
-ever touches such a line.
+A dash bullet in a todo list only ever means a task, and it is invisible to
+every task parser — including Obsidian — until it has a checkbox. So `fmt`
+turns it (and the `- []` near-miss) into `- [ ] rotate the token for x` and
+stamps it as created today. Two escape hatches are deliberate: `*` and `+`
+bullets are never touched, so notes stay notes, and a `- [...` bullet is left
+alone, so markdown links survive. Outside `fmt`, nothing ever rewrites these
+lines.
 
 To expand on every save in Neovim, filter the buffer through `tuido fmt -`.
 Pair it with a `BufWritePost` hook running `tuido _commit <file>` (fire and
