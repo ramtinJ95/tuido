@@ -65,6 +65,8 @@ func run(args []string) int {
 		err = cmdShow(rest)
 	case "_lists", "_workspaces": // undocumented: shell completion helpers
 		err = cmdNames(cmd, rest)
+	case "_commit": // undocumented: commit-and-push one file, for editor save hooks
+		err = cmdCommit(rest)
 	case "internal-sync": // undocumented: the detached background job
 		err = cmdInternalSync(rest)
 	case "internal-update-check": // undocumented: the detached version check

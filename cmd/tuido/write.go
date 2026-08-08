@@ -284,6 +284,34 @@ func cmdID(args []string) error {
 	return nil
 }
 
+// cmdCommit is the editor-integration plumbing behind save-time sync: commit
+// one saved file and kick off the detached push, exactly what every mutating
+// command does after writing. Undocumented, like the other underscore helpers.
+func cmdCommit(args []string) error {
+	fs := newFlagSet("_commit")
+	fl := registerCommon(fs)
+	if err := fs.Parse(args); err != nil {
+		return flagErr(err)
+	}
+	if fs.NArg() != 1 {
+		return uerr("usage: tuido _commit <path>")
+	}
+	a, err := openApp(*fl.root, "")
+	if err != nil {
+		return err
+	}
+	path, err := filepath.Abs(fs.Arg(0))
+	if err != nil {
+		return err
+	}
+	rel, err := filepath.Rel(a.st.Root, path)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return uerr("%s is not under the todo root %s", fs.Arg(0), a.st.Root)
+	}
+	a.commit(path, "edit: "+strings.TrimSuffix(filepath.ToSlash(rel), ".md"))
+	return nil
+}
+
 // reread re-parses the file the match came from and returns the same task from
 // that fresh parse, so the write is based on the file as it is now.
 func reread(a *app, hit match.Candidate) (*task.File, *task.Task, error) {
