@@ -391,6 +391,12 @@ func scanSegments(rest string) []segment {
 	return segs
 }
 
+// HasFieldMarker reports whether s contains a field marker at a word boundary
+// — the same test Rewritable applies to a task's free-text fields.
+func HasFieldMarker(s string) bool {
+	return len(scanSegments(" "+s)) > 0
+}
+
 // parseFields pulls the emoji fields out of the text after the checkbox and
 // returns the description.
 //
