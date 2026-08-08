@@ -163,6 +163,7 @@ up the newest tag.
 | `tuido done <fuzzy…>` | mark a task done |
 | `tuido ls [list] [--all]` | show actionable tasks |
 | `tuido sort [list] [--by …]` | reorder tasks within their blocks |
+| `tuido fmt [list] \| fmt -` | expand `:p2` / `:due monday` shorthand into fields |
 | `tuido open [query] [--root]` | open a list, or the whole repo, in `$EDITOR` |
 | `tuido path [query]` | print the resolved file path |
 | `tuido use [workspace]` | switch or show the current workspace |
@@ -229,6 +230,95 @@ is parsed and preserved; a subset is interpreted.
 | `⛔` blocked by · `🆔` id | dependencies | ids are never written automatically |
 | `🔁` recurrence · `🏁` on completion | | preserved, not yet acted on |
 | `#tag` | tag | stays inline in the description |
+
+### Shorthand
+
+Typing emoji in an editor is friction, so `tuido fmt` accepts a plain-ASCII
+input dialect and canonicalises it. You write:
+
+```markdown
+- [ ] rotate the token for x :p2 :due monday
+```
+
+and `tuido fmt` rewrites it to:
+
+```markdown
+- [ ] rotate the token for x ⏫ 📅 2026-08-10 ➕ 2026-08-08
+```
+
+| token | meaning |
+|---|---|
+| `:p1` … `:p5` | priority, highest → lowest |
+| `:prio <v>` | priority by name or digit 1–5 |
+| `:due <when>` | due date |
+| `:start <when>` | start date |
+| `:sched <when>` | scheduled date |
+
+`<when>` is `YYYY-MM-DD`, `today`, `tomorrow`, `week` or a weekday name (the
+next strictly future one). Shorthand is input, never storage: the file only
+ever contains the emoji dialect, so Obsidian keeps working. A task that had
+shorthand applied gets a ➕ creation date if it lacks one — shorthand marks the
+line as freshly captured, and bare lines are never stamped, so pre-existing
+tasks are not backdated. A token that cannot apply (field already set, bad
+value, unknown key) stays in the text verbatim and is reported. Running `fmt`
+twice changes nothing.
+
+To expand on every save in Neovim, filter the buffer through `tuido fmt -`:
+
+```lua
+vim.api.nvim_create_autocmd("BufWritePre", {
+  pattern = vim.fn.expand("~/todos") .. "/*.md", -- your todo root
+  callback = function(ev)
+    if vim.fn.executable("tuido") == 0 then return end
+    local lines = vim.api.nvim_buf_get_lines(ev.buf, 0, -1, false)
+    local res = vim.system({ "tuido", "fmt", "-" },
+      { stdin = table.concat(lines, "\n") .. "\n" }):wait()
+    if res.code ~= 0 then
+      vim.notify("tuido fmt: " .. vim.trim(res.stderr or ""), vim.log.levels.WARN)
+      return
+    end
+    local out = vim.split(res.stdout, "\n")
+    if out[#out] == "" then table.remove(out) end
+    if not vim.deep_equal(out, lines) then
+      vim.api.nvim_buf_set_lines(ev.buf, 0, -1, false, out)
+    end
+  end,
+})
+```
+
+### Don't hard-wrap task lines
+
+A task's fields only count on the `- [ ]` line itself — that is how the Obsidian
+Tasks format works, and tuido follows it. Indented lines below a task are
+preserved and travel with it when sorting, but they are prose: a hard wrap that
+pushes `📅 2026-08-11` onto a continuation line silently turns the due date
+into text.
+
+So exempt your todo directory from any editor rule that reformats markdown to a
+fixed width, and use visual-only soft wrap instead. In Neovim, if an autocmd
+sets `textwidth` for markdown, skip it for todo files:
+
+```lua
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "markdown",
+  callback = function(ev)
+    local path = vim.api.nvim_buf_get_name(ev.buf)
+    if vim.startswith(path, vim.fn.expand("~/todos") .. "/") then
+      vim.opt_local.wrap = true       -- soft wrap, file stays one line per task
+      vim.opt_local.linebreak = true
+      vim.opt_local.breakindent = true
+      return
+    end
+    vim.opt_local.textwidth = 80
+    vim.opt_local.formatoptions:append("t")
+  end,
+})
+```
+
+Long content belongs in indented continuation lines under the task; the task
+line itself stays a short description plus its fields. As a safety net,
+`tuido fmt` warns when a continuation line carries a field marker or shorthand
+token — almost always the debris of an accidental hard wrap.
 
 ## Design
 
