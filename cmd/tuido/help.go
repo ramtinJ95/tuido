@@ -39,11 +39,18 @@ var helps = map[string]help{
 			"Re-running against a valid config changes nothing unless --force.",
 			"If --remote points at a repo that already has commits, it is cloned",
 			"rather than initialised, which is how a second machine adopts your tasks.",
+			"",
+			"Commits count on your GitHub contribution graph only when their author",
+			"email is linked to your account, and tuido commits on every edit. Saying",
+			"yes to the profile question (or passing --commit-email) sets a repo-local",
+			"author email GitHub does not know, so autosave commits never show up",
+			"there. The setting is per-clone: answer it again on each machine.",
 		},
 		examples: []string{
 			"tuido init",
 			"tuido init --root ~/notes/todo --workspace work",
 			"tuido init --root ~/notes/todo --remote git@github.com:you/todo.git",
+			"tuido init --root ~/notes/todo --commit-email tuido@localhost",
 		},
 	},
 	"add": {

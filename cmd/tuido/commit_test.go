@@ -52,6 +52,25 @@ func TestCommitPlumbingCommitsOneFile(t *testing.T) {
 	}
 }
 
+// The whole point of --commit-email is that autosave commits carry an author
+// email GitHub cannot link to an account, so they never reach the profile's
+// contribution graph.
+func TestInitCommitEmailKeepsCommitsOffTheProfile(t *testing.T) {
+	e := newEnv(t)
+	e.mustRun("init", "--root", e.root, "--workspace", "work", "--git",
+		"--commit-email", "tuido@localhost")
+	if got := strings.TrimSpace(gitOut(t, e.root, "config", "--local", "user.email")); got != "tuido@localhost" {
+		t.Fatalf("repo-local user.email = %q, want tuido@localhost", got)
+	}
+
+	gitOut(t, e.root, "config", "user.name", "tuido") // commits also need a name
+	e.write("work/data.md", "- [ ] typed on this machine\n")
+	e.mustRun("_commit", filepath.Join(e.root, "work", "data.md"))
+	if got := strings.TrimSpace(gitOut(t, e.root, "log", "-1", "--format=%ae")); got != "tuido@localhost" {
+		t.Errorf("commit author email = %q, want tuido@localhost", got)
+	}
+}
+
 func TestCommitPlumbingRefusesPathsOutsideRoot(t *testing.T) {
 	e := newEnv(t)
 	e.init()

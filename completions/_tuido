@@ -82,6 +82,7 @@ _tuido() {
             '--workspace[first workspace]:name:' \
             '--git[initialise git]' '--no-git[do not initialise git]' \
             '--remote[git remote]:url:' \
+            '--commit-email[repo-local author email for automatic commits]:email:' \
             '--force[overwrite an existing config]'
           ;;
       esac

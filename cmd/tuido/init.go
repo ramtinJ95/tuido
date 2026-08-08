@@ -100,6 +100,27 @@ func cmdInit(args []string) error {
 	}
 	cfg.Git.Enabled = gitWanted || cloned
 
+	// Commits count on a GitHub contribution graph only when their author
+	// email is linked to the account. tuido commits on every edit, so a synced
+	// repo would paint thousands of autosave squares onto the profile; a
+	// repo-local email linked to nothing keeps them off without changing how
+	// sync works. The setting lives in .git/config and never syncs, so every
+	// machine — including the clone path — gets asked.
+	if cfg.Git.Enabled {
+		email := *fl.commitEmail
+		if email == "" && interactive && !fs.Changed("commit-email") {
+			if askYesNo(in, "  keep tuido's automatic commits off your GitHub contribution graph?", true) {
+				email = "tuido@localhost"
+			}
+		}
+		if email != "" {
+			if out, err := run3("git", "-C", rootAbs, "config", "user.email", email); err != nil {
+				return uerr("git config: %s", out)
+			}
+			fmt.Printf("  commits will be authored as %s (repo-local)\n", email)
+		}
+	}
+
 	if !cloned {
 		if *workspace == "" && interactive {
 			wsName = ask(in, "first workspace", "work")

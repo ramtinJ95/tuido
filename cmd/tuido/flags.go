@@ -18,18 +18,19 @@ func registerCommon(fs *pflag.FlagSet) commonFlags {
 }
 
 type initFlags struct {
-	root, workspace, remote *string
-	git, noGit, force       *bool
+	root, workspace, remote, commitEmail *string
+	git, noGit, force                    *bool
 }
 
 func registerInit(fs *pflag.FlagSet) initFlags {
 	return initFlags{
-		root:      fs.String("root", "", "todo root directory"),
-		workspace: fs.String("workspace", "", `first workspace name (default "work")`),
-		git:       fs.Bool("git", true, "initialise a git repo in the root"),
-		noGit:     fs.Bool("no-git", false, "do not initialise a git repo"),
-		remote:    fs.String("remote", "", "git remote; if it has commits, clone it instead of initialising"),
-		force:     fs.Bool("force", false, "overwrite an existing config"),
+		root:        fs.String("root", "", "todo root directory"),
+		workspace:   fs.String("workspace", "", `first workspace name (default "work")`),
+		git:         fs.Bool("git", true, "initialise a git repo in the root"),
+		noGit:       fs.Bool("no-git", false, "do not initialise a git repo"),
+		remote:      fs.String("remote", "", "git remote; if it has commits, clone it instead of initialising"),
+		commitEmail: fs.String("commit-email", "", "repo-local author email; one GitHub doesn't know keeps commits off your profile"),
+		force:       fs.Bool("force", false, "overwrite an existing config"),
 	}
 }
 
