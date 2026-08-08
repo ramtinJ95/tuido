@@ -188,6 +188,26 @@ var helps = map[string]help{
 			"tuido sync --status",
 		},
 	},
+	"upgrade": {
+		summary: "install the latest release",
+		synopsis: []string{
+			"tuido upgrade [flags]",
+		},
+		notes: []string{
+			"Downloads the release binary for this platform, verifies it against the",
+			"published sha256 checksum, and replaces the running binary atomically.",
+			"An unverifiable download is refused rather than installed.",
+			"",
+			"tuido checks for a new version at most once a day, in a detached",
+			"background process, and mentions it in one line the next time you run a",
+			"command. Nothing is ever downloaded or replaced without this command.",
+			"Set check = false under [update] in the config to turn the reminder off.",
+		},
+		examples: []string{
+			"tuido upgrade --check",
+			"tuido upgrade",
+		},
+	},
 	"id": {
 		summary: "stamp a short id on a task",
 		synopsis: []string{

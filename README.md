@@ -61,6 +61,37 @@ tuido init --root ~/notes/todo --remote git@github.com:you/todo.git
 ambiguous query opens a picker; without it, tuido prints the candidates and
 exits 1, so every command stays scriptable.
 
+## Updating
+
+```sh
+tuido upgrade          # download and install the latest release
+tuido upgrade --check  # just report whether one exists
+```
+
+tuido notices new versions on its own, at most once a day, in a detached
+background process. It never checks *during* a command — the answer is read
+from a cache file, so a slow or unreachable GitHub can't make `tuido ls` hang.
+When there's something newer you get one line above your normal output:
+
+```
+⚠ tuido v0.2.0 is available (you have v0.1.1) — run `tuido upgrade`
+```
+
+Nothing is ever downloaded or replaced without you asking. `upgrade` fetches
+the binary for your platform, checks it against the release's published sha256
+manifest, and refuses to install if that doesn't match. The replacement is
+atomic and keeps the existing file permissions.
+
+To turn the reminder off entirely:
+
+```toml
+[update]
+check = false
+```
+
+`go install github.com/ramtinJ95/tuido/cmd/tuido@latest` still works and picks
+up the newest tag.
+
 ## Commands
 
 | | |
@@ -74,6 +105,7 @@ exits 1, so every command stays scriptable.
 | `tuido use [workspace]` | switch or show the current workspace |
 | `tuido sync [--status]` | blocking fetch, rebase and push |
 | `tuido id <fuzzy…>` | stamp a short id on a task |
+| `tuido upgrade [--check]` | install the latest release |
 | `tuido init` | first-run setup |
 
 Flags may appear before or after the text — `tuido add rotate certs -p high`
@@ -173,6 +205,17 @@ make test     # everything
 make fuzz     # 60s on the parser — the highest-value test here
 make check    # vet + test + gofmt
 ```
+
+Releasing is one command on your own machine — there is no CI:
+
+```sh
+make release TAG=v0.2.0
+```
+
+That tags, pushes, cross-compiles `darwin`/`linux` × `arm64`/`amd64`, writes
+`checksums.txt`, and creates the GitHub release with the binaries attached.
+`tuido upgrade` consumes exactly those assets, so the names in the Makefile and
+in `selfupdate.AssetName` have to stay in step.
 
 ## License
 

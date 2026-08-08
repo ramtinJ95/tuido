@@ -27,6 +27,7 @@ _tuido() {
     'use:switch or show the current workspace'
     'sync:fetch, rebase and push'
     'id:stamp a short id on a task'
+    'upgrade:install the latest release'
   )
 
   _arguments -C '1: :->cmd' '*:: :->args'
@@ -63,6 +64,11 @@ _tuido() {
         open|path) _arguments '--all[search every workspace]' '1:list:_tuido_lists' ;;
         use)       _arguments '1:workspace:_tuido_workspaces' ;;
         sync)      _arguments '--status[print state without touching the network]' ;;
+        upgrade)
+          _arguments \
+            '--check[report whether a newer release exists, install nothing]' \
+            '--force[install the latest release even if it is not newer]'
+          ;;
         init)
           _arguments \
             '--root[todo root]:directory:_files -/' \

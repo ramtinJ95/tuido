@@ -27,6 +27,26 @@ type Config struct {
 	DefaultWorkspace string `toml:"default_workspace"`
 	CaptureList      string `toml:"capture_list"`
 	Git              Git    `toml:"git"`
+	Update           Update `toml:"update"`
+}
+
+// Update controls the background check for a newer tuido. The check never
+// happens in front of a command; it is a detached process whose answer is read
+// from cache, so turning it off costs nothing either way.
+type Update struct {
+	Check    bool   `toml:"check"`
+	Interval string `toml:"interval"`
+}
+
+// CheckInterval is how stale the cached answer may be before a background
+// check is kicked off. A malformed value falls back to the default rather than
+// failing a read command.
+func (u Update) CheckInterval() time.Duration {
+	d, err := time.ParseDuration(u.Interval)
+	if err != nil || d <= 0 {
+		return 24 * time.Hour
+	}
+	return d
 }
 
 // Git holds the sync settings. All of it is per-machine on purpose: a laptop
@@ -43,6 +63,7 @@ func DefaultConfig() Config {
 		DefaultWorkspace: "work",
 		CaptureList:      "inbox",
 		Git:              Git{Enabled: true, AutoPush: true, Fetch: "60s"},
+		Update:           Update{Check: true, Interval: "24h"},
 	}
 }
 

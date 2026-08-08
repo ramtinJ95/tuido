@@ -122,6 +122,18 @@ func registerSync(fs *pflag.FlagSet) syncFlags {
 	}
 }
 
+type upgradeFlags struct {
+	check *bool
+	force *bool
+}
+
+func registerUpgrade(fs *pflag.FlagSet) upgradeFlags {
+	return upgradeFlags{
+		check: fs.Bool("check", false, "report whether a newer release exists, install nothing"),
+		force: fs.Bool("force", false, "install the latest release even if it is not newer"),
+	}
+}
+
 // registerFlags declares a command's flags on fs without running it, so help
 // can be rendered for a command that is not being executed.
 func registerFlags(name string, fs *pflag.FlagSet) {
@@ -142,5 +154,7 @@ func registerFlags(name string, fs *pflag.FlagSet) {
 		registerCommon(fs)
 	case "done", "path", "id":
 		registerScope(fs)
+	case "upgrade":
+		registerUpgrade(fs)
 	}
 }

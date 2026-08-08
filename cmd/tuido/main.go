@@ -57,19 +57,23 @@ func run(args []string) int {
 		err = cmdSync(rest)
 	case "id":
 		err = cmdID(rest)
+	case "upgrade":
+		err = cmdUpgrade(rest)
 	case "show": // undocumented: the fzf preview helper
 		err = cmdShow(rest)
 	case "_lists", "_workspaces": // undocumented: shell completion helpers
 		err = cmdNames(cmd, rest)
 	case "internal-sync": // undocumented: the detached background job
 		err = cmdInternalSync(rest)
+	case "internal-update-check": // undocumented: the detached version check
+		err = cmdInternalUpdateCheck(rest)
 	case "help":
 		err = cmdHelp(rest)
 	case "-h", "--help":
 		usage(os.Stdout)
 		return exitOK
-	case "version", "--version":
-		fmt.Println("tuido " + version)
+	case "version", "--version", "-v":
+		printVersion()
 		return exitOK
 	default:
 		render.Errorf("unknown command %q", cmd)
@@ -95,8 +99,6 @@ func run(args []string) int {
 	render.Errorf("%v", err)
 	return code
 }
-
-var version = "dev"
 
 func exitCode(err error) int {
 	var (
@@ -153,14 +155,19 @@ func openApp(root, ws string) (*app, error) {
 		return nil, err
 	}
 	repo := vcs.New(st.Root, store.CacheDir(), st.Cfg.Git.Enabled, st.Cfg.Git.AutoPush)
-	// Fire and forget: the render below never waits for it.
+	// Both fire and forget: the render below never waits for either.
 	repo.MaybeFetch(st.Cfg.Git.FetchInterval())
+	maybeCheckUpdate(st.Cfg)
 	return &app{st: st, repo: repo, r: render.New(os.Stdout)}, nil
 }
 
-// warn prints the sync warning line, if any, above a command's output.
+// warn prints the sync warning and update reminder, if any, above a command's
+// output. Both are read from cache; neither waits for the network.
 func (a *app) warn() {
 	if msg := a.repo.Warning(); msg != "" {
+		a.r.Warn(msg)
+	}
+	if msg := updateNotice(a.st.Cfg); msg != "" {
 		a.r.Warn(msg)
 	}
 }
@@ -205,6 +212,7 @@ func usage(w *os.File) {
   tuido use   [workspace]          switch or show the current workspace
   tuido sync  [--status]           blocking fetch, rebase and push
   tuido id    <fuzzy…>             stamp a short id on a task
+  tuido upgrade [--check]          install the latest release
 
 Flags may appear before or after the text; -- ends flag parsing.
 Exit codes: 0 ok, 1 user error, 2 internal, 3 file conflicted, 4 not initialised.

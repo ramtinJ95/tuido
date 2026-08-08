@@ -510,6 +510,23 @@ func TestHelpForUnknownCommand(t *testing.T) {
 	}
 }
 
+func TestReleaseVersionRecognition(t *testing.T) {
+	cases := map[string]bool{
+		"v0.2.0":           true,
+		"v0.2.0-rc1":       true,
+		"v0.1.1+dirty":     false,
+		"v0.1.1-1-gabc123": false,
+		"v0.1.1-dirty":     false,
+		"dev":              false,
+		"dev+abc123":       false,
+	}
+	for version, want := range cases {
+		if got := isReleaseVersion(version); got != want {
+			t.Errorf("isReleaseVersion(%q) = %v, want %v", version, got, want)
+		}
+	}
+}
+
 func TestAddFromStdin(t *testing.T) {
 	e := newEnv(t)
 	e.init()
