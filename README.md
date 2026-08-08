@@ -274,7 +274,10 @@ The laziest way to type a new task is an empty checkbox:
 repairs it to `- [ ]` and stamps it as created today. Outside `fmt`, nothing
 ever touches such a line.
 
-To expand on every save in Neovim, filter the buffer through `tuido fmt -`:
+To expand on every save in Neovim, filter the buffer through `tuido fmt -`.
+Pair it with a `BufWritePost` hook running `tuido _commit <file>` (fire and
+forget) and editor saves also commit and push in the background, exactly like
+edits made through tuido commands:
 
 ```lua
 vim.api.nvim_create_autocmd("BufWritePre", {
@@ -293,6 +296,14 @@ vim.api.nvim_create_autocmd("BufWritePre", {
     if not vim.deep_equal(out, lines) then
       vim.api.nvim_buf_set_lines(ev.buf, 0, -1, false, out)
     end
+  end,
+})
+
+vim.api.nvim_create_autocmd("BufWritePost", {
+  pattern = vim.fn.expand("~/todos") .. "/*.md",
+  callback = function(ev)
+    if vim.fn.executable("tuido") == 0 then return end
+    vim.system({ "tuido", "_commit", vim.api.nvim_buf_get_name(ev.buf) })
   end,
 })
 ```
