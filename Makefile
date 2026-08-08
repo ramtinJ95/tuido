@@ -62,6 +62,13 @@ release:
 	@test -n "$(TAG)" || { echo "usage: make release TAG=v0.2.0"; exit 1; }
 	@printf '%s\n' "$(TAG)" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$$' || \
 	  { echo "TAG must be a semantic version such as v0.2.0"; exit 1; }
+	@version='$(patsubst v%,%,$(TAG))'; \
+	  grep -Eq "^## \[$$version\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$$" CHANGELOG.md || \
+	  { echo "CHANGELOG.md has no dated section for $$version"; exit 1; }; \
+	  notes="$$(awk -v heading="## [$$version] - " \
+	    'index($$0, heading) == 1 { capture = 1; next } capture && /^## \[/ { exit } capture { print }' \
+	    CHANGELOG.md)"; \
+	  test -n "$$notes" || { echo "CHANGELOG.md section for $$version is empty"; exit 1; }
 	@test -z "$$(git status --porcelain)" || { echo "working tree is dirty"; exit 1; }
 	@test "$$(git branch --show-current)" = main || { echo "release must run from main"; exit 1; }
 	git fetch --prune origin main
@@ -70,7 +77,12 @@ release:
 	$(MAKE) dist VERSION=$(TAG)
 	git tag -a $(TAG) -m "$(TAG)"
 	git push --atomic origin main $(TAG)
-	gh release create $(TAG) $(DIST)/* --title $(TAG) --generate-notes --verify-tag
+	@version='$(patsubst v%,%,$(TAG))'; \
+	  notes="$$(awk -v heading="## [$$version] - " \
+	    'index($$0, heading) == 1 { capture = 1; next } capture && /^## \[/ { exit } capture { print }' \
+	    CHANGELOG.md)"; \
+	  test -n "$$notes" || { echo "CHANGELOG.md section for $$version is empty"; exit 1; }; \
+	  gh release create $(TAG) $(DIST)/* --title $(TAG) --notes "$$notes" --verify-tag
 	@echo "✓ released $(TAG) — users get it via 'tuido upgrade'"
 
 clean:
