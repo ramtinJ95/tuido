@@ -137,7 +137,7 @@ from a cache file, so a slow or unreachable GitHub can't make `tuido ls` hang.
 When there's something newer you get one line above your normal output:
 
 ```
-⚠ tuido v0.3.0 is available (you have v0.2.0) — run `tuido upgrade`
+⚠ tuido v0.3.1 is available (you have v0.3.0) — run `tuido upgrade`
 ```
 
 Nothing is ever downloaded or replaced without you asking. `upgrade` fetches
@@ -364,6 +364,9 @@ file-format change to add later.
 
 ## Development
 
+User-visible changes are maintained in [CHANGELOG.md](CHANGELOG.md). Add them
+under `Unreleased`, then move them into a dated version section when releasing.
+
 ```sh
 make test     # everything
 make fuzz     # 60s on the parser — the highest-value test here
@@ -373,7 +376,7 @@ make check    # vet + test + gofmt
 Releasing is one command on your own machine — there is no CI:
 
 ```sh
-make release TAG=v0.3.0
+make release TAG=v0.3.1
 ```
 
 That tags, pushes, cross-compiles `darwin`/`linux` × `arm64`/`amd64`, writes
