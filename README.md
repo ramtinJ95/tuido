@@ -253,6 +253,7 @@ and `tuido fmt` rewrites it to:
 | `:due <when>` | due date |
 | `:start <when>` | start date |
 | `:sched <when>` | scheduled date |
+| `:new` | nothing but the ➕ creation stamp |
 
 `<when>` is `YYYY-MM-DD`, `today`, `tomorrow`, `week` or a weekday name (the
 next strictly future one). Shorthand is input, never storage: the file only
@@ -262,6 +263,16 @@ line as freshly captured, and bare lines are never stamped, so pre-existing
 tasks are not backdated. A token that cannot apply (field already set, bad
 value, unknown key) stays in the text verbatim and is reported. Running `fmt`
 twice changes nothing.
+
+The laziest way to type a new task is an empty checkbox:
+
+```markdown
+- [] rotate the token for x
+```
+
+`- []` is invisible to every task parser — including Obsidian — so `fmt`
+repairs it to `- [ ]` and stamps it as created today. Outside `fmt`, nothing
+ever touches such a line.
 
 To expand on every save in Neovim, filter the buffer through `tuido fmt -`:
 
