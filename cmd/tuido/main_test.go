@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -545,5 +546,91 @@ func TestAddFromStdin(t *testing.T) {
 	body := e.read("work/inbox.md")
 	if !strings.Contains(body, "first from stdin") || !strings.Contains(body, "second from stdin") {
 		t.Errorf("stdin capture:\n%s", body)
+	}
+}
+
+// `ls --json` is the machine-readable interface: the visibility rules match
+// the human output, hidden tasks carry the reason, and stdout is pure JSON.
+func TestLsJSON(t *testing.T) {
+	e := newEnv(t)
+	e.init()
+	e.write("work/inbox.md",
+		"- [ ] rotate vault certs ⏫ 📅 2026-09-01 #infra\n"+
+			"- [x] draft the runbook ✅ 2026-08-05\n")
+
+	var tasks []map[string]any
+	out := e.mustRun("ls", "--json").stdout
+	if err := json.Unmarshal([]byte(out), &tasks); err != nil {
+		t.Fatalf("stdout is not valid JSON: %v\n%s", err, out)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("want 1 actionable task, got %d:\n%s", len(tasks), out)
+	}
+	got := tasks[0]
+	for k, want := range map[string]string{
+		"workspace": "work",
+		"list":      "inbox",
+		"state":     "open",
+		"desc":      "rotate vault certs #infra",
+		"priority":  "high",
+		"due":       "2026-09-01",
+	} {
+		if got[k] != want {
+			t.Errorf("%s = %v, want %q", k, got[k], want)
+		}
+	}
+	if got["line"] != float64(1) {
+		t.Errorf("line = %v, want 1", got["line"])
+	}
+	if got["path"] != filepath.Join(e.root, "work", "inbox.md") {
+		t.Errorf("path = %v", got["path"])
+	}
+
+	out = e.mustRun("ls", "--json", "--all").stdout
+	if err := json.Unmarshal([]byte(out), &tasks); err != nil {
+		t.Fatalf("--all stdout is not valid JSON: %v\n%s", err, out)
+	}
+	if len(tasks) != 2 {
+		t.Fatalf("want 2 tasks with --all, got %d:\n%s", len(tasks), out)
+	}
+	var done map[string]any
+	for _, task := range tasks {
+		if task["state"] == "done" {
+			done = task
+		}
+	}
+	if done == nil {
+		t.Fatalf("done task missing from --all output:\n%s", out)
+	}
+	if done["hidden"] != "done" || done["completed"] != "2026-08-05" {
+		t.Errorf("done task fields: hidden = %v, completed = %v", done["hidden"], done["completed"])
+	}
+}
+
+// An empty result is an empty array, so `| jq '.[]'` never chokes on null.
+func TestLsJSONEmptyIsArray(t *testing.T) {
+	e := newEnv(t)
+	e.init()
+	out := e.mustRun("ls", "--json").stdout
+	if strings.TrimSpace(out) != "[]" {
+		t.Errorf("empty ls --json = %q, want []", out)
+	}
+}
+
+// The briefing is documentation: it prints before init (exit 0, naming the
+// fix) and carries this machine's real root once initialised.
+func TestAgentsBriefing(t *testing.T) {
+	e := newEnv(t)
+	pre := e.mustRun("agents")
+	if !strings.Contains(pre.stdout, "tuido init") {
+		t.Errorf("uninitialised briefing does not name the fix:\n%s", pre.stdout)
+	}
+
+	e.init()
+	out := e.mustRun("agents").stdout
+	for _, want := range []string{e.root, "current: work", "--json", "tuido done", "tuido fmt", "Exit codes"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("briefing missing %q", want)
+		}
 	}
 }

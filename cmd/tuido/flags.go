@@ -57,6 +57,7 @@ type lsFlags struct {
 	all   *bool
 	tags  *[]string
 	dueBy *string
+	json  *bool
 }
 
 func registerLs(fs *pflag.FlagSet) lsFlags {
@@ -65,6 +66,7 @@ func registerLs(fs *pflag.FlagSet) lsFlags {
 		all:         fs.Bool("all", false, "show everything, in every workspace"),
 		tags:        fs.StringSliceP("tag", "t", nil, "only tasks with this tag (repeatable)"),
 		dueBy:       fs.String("due", "", "only tasks due on or before this date (today|tomorrow|week|YYYY-MM-DD)"),
+		json:        fs.Bool("json", false, "emit a JSON array of tasks on stdout"),
 	}
 }
 
@@ -151,7 +153,7 @@ func registerFlags(name string, fs *pflag.FlagSet) {
 		registerOpen(fs)
 	case "sync":
 		registerSync(fs)
-	case "use":
+	case "use", "agents":
 		registerCommon(fs)
 	case "done", "path", "id", "fmt":
 		registerScope(fs)

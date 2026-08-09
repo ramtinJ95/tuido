@@ -175,7 +175,7 @@ up the newest tag.
 |---|---|
 | `tuido add [flags] <text…>` | capture a task (`-p` prio, `-d` due, `-t` tag, `-l` list) |
 | `tuido done <fuzzy…>` | mark a task done |
-| `tuido ls [list] [--all]` | show actionable tasks |
+| `tuido ls [list] [--all] [--json]` | show actionable tasks |
 | `tuido sort [list] [--by …]` | reorder tasks within their blocks |
 | `tuido fmt [list] \| fmt -` | expand `:p2` / `:due monday` shorthand into fields |
 | `tuido open [query] [--root]` | open a list, or the whole repo, in `$EDITOR` |
@@ -183,6 +183,7 @@ up the newest tag.
 | `tuido use [workspace]` | switch or show the current workspace |
 | `tuido sync [--status]` | blocking fetch, rebase and push |
 | `tuido id <fuzzy…>` | stamp a short id on a task |
+| `tuido agents` | print a briefing for coding agents |
 | `tuido upgrade [--check]` | install the latest release |
 | `tuido init` | first-run setup |
 
@@ -201,6 +202,26 @@ Exit codes: `0` ok, `1` user error, `2` internal, `3` file conflicted,
 `4` not initialised. Help exits `0`; a bad flag exits `1`. Errors go to stderr,
 output to stdout, and colour is used only when stdout is a terminal — so
 scripts and agents get clean, parseable output with no special flags.
+
+## Coding agents
+
+Agents already know how to drive a CLI, and because the markdown files are the
+sole source of truth they can also edit your lists directly and run `tuido fmt`
+after. The one thing they lack is discovery — knowing tuido exists and which of
+the two interfaces to prefer. `tuido agents` prints a short briefing that
+covers exactly that; pipe it into whatever file your agent reads on startup:
+
+```sh
+tuido agents >> AGENTS.md
+```
+
+For structured queries, `tuido ls --json` emits a JSON array of task objects —
+workspace, list, path, line, state, desc, priority, tags, dates, id and
+blocked-by — following the same visibility rules as the human output:
+
+```sh
+tuido ls --json --all | jq -r '.[] | select(.hidden == "blocked") | .desc'
+```
 
 ## How it stores things
 

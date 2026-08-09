@@ -158,6 +158,12 @@ var helps = map[string]help{
 			"tasks, and prints a footer counting each reason. --all shows everything",
 			"in every workspace.",
 			"",
+			"--json emits a JSON array of task objects on stdout, with warnings on",
+			"stderr. Each object carries workspace, list, path, line, state, desc,",
+			"priority, plus tags, the dates, id, blocked_by and recurrence when set,",
+			"and hidden — the reason a default ls would hide the task. The same",
+			"visibility rules apply, so combine with --all for everything.",
+			"",
 			"Colour is used only when stdout is a terminal, and comes from the",
 			"terminal's own palette. NO_COLOR and TERM=dumb disable it.",
 		},
@@ -166,6 +172,7 @@ var helps = map[string]help{
 			"tuido ls oncall",
 			"tuido ls -t infra --due week",
 			"tuido ls --all",
+			"tuido ls --json --all | jq -r '.[].desc'",
 		},
 	},
 	"open": {
@@ -263,6 +270,23 @@ var helps = map[string]help{
 		},
 		examples: []string{
 			"tuido id migrate the bastion",
+		},
+	},
+	"agents": {
+		summary: "print a briefing for coding agents",
+		synopsis: []string{
+			"tuido agents",
+		},
+		notes: []string{
+			"Prints a short markdown briefing that teaches a coding agent how to work",
+			"with your task files: the CLI, direct file edits, and the rules that keep",
+			"both safe. Pipe it into whatever file your agent reads on startup.",
+			"",
+			"Works before `tuido init` too, so documentation never exits non-zero.",
+		},
+		examples: []string{
+			"tuido agents >> AGENTS.md",
+			"tuido agents >> ~/.claude/CLAUDE.md",
 		},
 	},
 }
