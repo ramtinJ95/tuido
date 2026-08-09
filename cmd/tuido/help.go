@@ -272,6 +272,23 @@ var helps = map[string]help{
 			"tuido id migrate the bastion",
 		},
 	},
+	"agents": {
+		summary: "print a briefing for coding agents",
+		synopsis: []string{
+			"tuido agents",
+		},
+		notes: []string{
+			"Prints a short markdown briefing that teaches a coding agent how to work",
+			"with your task files: the CLI, direct file edits, and the rules that keep",
+			"both safe. Pipe it into whatever file your agent reads on startup.",
+			"",
+			"Works before `tuido init` too, so documentation never exits non-zero.",
+		},
+		examples: []string{
+			"tuido agents >> AGENTS.md",
+			"tuido agents >> ~/.claude/CLAUDE.md",
+		},
+	},
 }
 
 // newFlagSet builds a flag set whose -h/--help prints real documentation

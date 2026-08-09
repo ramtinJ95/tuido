@@ -14,6 +14,10 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   priority, plus tags, dates, id, blocked_by and recurrence when set, and
   `hidden` — the reason a default `ls` would hide the task. The same
   visibility rules apply, so combine with `--all` for everything.
+- `tuido agents` prints a markdown briefing that teaches a coding agent how
+  to work with your task files — the CLI, direct file edits, and the rules
+  that keep both safe. Pipe it into an AGENTS.md or CLAUDE.md. It works
+  before `tuido init` too, so it never exits non-zero.
 
 ## [0.5.0] - 2026-08-08
 

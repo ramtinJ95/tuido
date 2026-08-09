@@ -28,6 +28,7 @@ _tuido() {
     'use:switch or show the current workspace'
     'sync:fetch, rebase and push'
     'id:stamp a short id on a task'
+    'agents:print a briefing for coding agents'
     'upgrade:install the latest release'
   )
 

@@ -59,6 +59,8 @@ func run(args []string) int {
 		err = cmdSync(rest)
 	case "id":
 		err = cmdID(rest)
+	case "agents":
+		err = cmdAgents(rest)
 	case "upgrade":
 		err = cmdUpgrade(rest)
 	case "show": // undocumented: the fzf preview helper
@@ -217,6 +219,7 @@ func usage(w *os.File) {
   tuido use   [workspace]          switch or show the current workspace
   tuido sync  [--status]           blocking fetch, rebase and push
   tuido id    <fuzzy…>             stamp a short id on a task
+  tuido agents                     print a briefing for coding agents
   tuido upgrade [--check]          install the latest release
 
 Flags may appear before or after the text; -- ends flag parsing.

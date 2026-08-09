@@ -616,3 +616,21 @@ func TestLsJSONEmptyIsArray(t *testing.T) {
 		t.Errorf("empty ls --json = %q, want []", out)
 	}
 }
+
+// The briefing is documentation: it prints before init (exit 0, naming the
+// fix) and carries this machine's real root once initialised.
+func TestAgentsBriefing(t *testing.T) {
+	e := newEnv(t)
+	pre := e.mustRun("agents")
+	if !strings.Contains(pre.stdout, "tuido init") {
+		t.Errorf("uninitialised briefing does not name the fix:\n%s", pre.stdout)
+	}
+
+	e.init()
+	out := e.mustRun("agents").stdout
+	for _, want := range []string{e.root, "current: work", "--json", "tuido done", "tuido fmt", "Exit codes"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("briefing missing %q", want)
+		}
+	}
+}
