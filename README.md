@@ -175,7 +175,7 @@ up the newest tag.
 |---|---|
 | `tuido add [flags] <text…>` | capture a task (`-p` prio, `-d` due, `-t` tag, `-l` list) |
 | `tuido done <fuzzy…>` | mark a task done |
-| `tuido ls [list] [--all]` | show actionable tasks |
+| `tuido ls [list] [--all] [--json]` | show actionable tasks |
 | `tuido sort [list] [--by …]` | reorder tasks within their blocks |
 | `tuido fmt [list] \| fmt -` | expand `:p2` / `:due monday` shorthand into fields |
 | `tuido open [query] [--root]` | open a list, or the whole repo, in `$EDITOR` |

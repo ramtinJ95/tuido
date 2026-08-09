@@ -59,6 +59,7 @@ _tuido() {
             '--all[show everything]' \
             '(-t --tag)'{-t,--tag}'[tag]:tag:' \
             '--due[due on or before]:when:(today tomorrow week)' \
+            '--json[emit a JSON array of tasks]' \
             '(-w --workspace)'{-w,--workspace}'[workspace]:workspace:_tuido_workspaces' \
             '1:list:_tuido_lists'
           ;;

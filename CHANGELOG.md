@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+
+- `tuido ls --json` emits a JSON array of task objects on stdout (warnings
+  move to stderr). Fields: workspace, list, path, line, state, desc,
+  priority, plus tags, dates, id, blocked_by and recurrence when set, and
+  `hidden` — the reason a default `ls` would hide the task. The same
+  visibility rules apply, so combine with `--all` for everything.
+
 ## [0.5.0] - 2026-08-08
 
 ### Added

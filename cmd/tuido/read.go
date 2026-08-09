@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -67,9 +69,80 @@ func cmdLs(args []string) error {
 		groups = append(groups, g)
 	}
 
+	if *fl.json {
+		// Stdout must stay pure JSON, so the warnings move to stderr.
+		a.r = render.New(os.Stderr)
+		a.warn()
+		return writeTasksJSON(os.Stdout, lists, groups, today, openIDs)
+	}
+
 	a.warn()
 	a.r.Groups(groups, !*all)
 	return nil
+}
+
+// jsonTask is the machine-readable view of one task, for `ls --json`. The
+// field names are part of the interface: scripts and agents depend on them.
+type jsonTask struct {
+	Workspace   string   `json:"workspace"`
+	List        string   `json:"list"`
+	Path        string   `json:"path"`
+	Line        int      `json:"line"`
+	State       string   `json:"state"`
+	Desc        string   `json:"desc"`
+	Priority    string   `json:"priority"`
+	Tags        []string `json:"tags,omitempty"`
+	Due         string   `json:"due,omitempty"`
+	Start       string   `json:"start,omitempty"`
+	Scheduled   string   `json:"scheduled,omitempty"`
+	Created     string   `json:"created,omitempty"`
+	Completed   string   `json:"completed,omitempty"`
+	CancelledOn string   `json:"cancelled_on,omitempty"`
+	ID          string   `json:"id,omitempty"`
+	BlockedBy   []string `json:"blocked_by,omitempty"`
+	Recurrence  string   `json:"recurrence,omitempty"`
+	Hidden      string   `json:"hidden,omitempty"`
+}
+
+// writeTasksJSON flattens the groups into one array. groups was built from
+// lists in order, one group per list, which is what lets the two line up here.
+func writeTasksJSON(w io.Writer, lists []store.List, groups []render.Group, today task.Date, openIDs map[string]bool) error {
+	out := make([]jsonTask, 0) // an empty result is [], never null
+	for i, g := range groups {
+		l := lists[i]
+		for _, t := range g.Tasks {
+			out = append(out, jsonTask{
+				Workspace:   l.Workspace,
+				List:        l.Name,
+				Path:        t.Path,
+				Line:        t.Line,
+				State:       t.State.String(),
+				Desc:        t.Desc,
+				Priority:    t.Priority.String(),
+				Tags:        t.Tags,
+				Due:         dateStr(t.Due),
+				Start:       dateStr(t.Start),
+				Scheduled:   dateStr(t.Scheduled),
+				Created:     dateStr(t.Created),
+				Completed:   dateStr(t.Completed),
+				CancelledOn: dateStr(t.CancelledOn),
+				ID:          t.ID,
+				BlockedBy:   t.BlockedBy,
+				Recurrence:  t.Recurrence,
+				Hidden:      t.Hidden(today, openIDs),
+			})
+		}
+	}
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(out)
+}
+
+func dateStr(d *task.Date) string {
+	if d == nil {
+		return ""
+	}
+	return d.String()
 }
 
 func matchesFilters(t *task.Task, tags []string, cutoff *task.Date) bool {
