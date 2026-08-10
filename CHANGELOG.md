@@ -7,6 +7,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-08-10
+
+### Added
+
+- Human-readable `tuido ls` output now groups tasks by their nested Markdown
+  headings within each list, omitting headings with no visible tasks.
+- List-scoped commands accept the list first, so `tuido work/oncall ls` is
+  equivalent to `tuido ls work/oncall`; the same form works for `open`, `sort`,
+  `fmt`, and `path`.
+
 ## [0.6.1] - 2026-08-10
 
 ### Fixed
@@ -116,7 +126,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   sorting, quick capture and completion, fuzzy task addressing, workspace and
   list resolution, non-blocking Git synchronization, and terminal rendering.
 
-[Unreleased]: https://github.com/ramtinJ95/tuido/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/ramtinJ95/tuido/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/ramtinJ95/tuido/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/ramtinJ95/tuido/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/ramtinJ95/tuido/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/ramtinJ95/tuido/compare/v0.4.0...v0.5.0
