@@ -343,6 +343,45 @@ func TestBlocks(t *testing.T) {
 	}
 }
 
+func TestHeadingPathsPreserveHierarchyAndRepeatedSections(t *testing.T) {
+	src := "- [ ] ungrouped\n" +
+		"# Backend\n- [ ] parent\n" +
+		"### Bugs\n- [ ] nested\n" +
+		"# Backend\n- [ ] repeated\n"
+	f, err := Parse("work/oncall.md", []byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	paths := f.HeadingPaths()
+	if _, ok := paths[1]; ok {
+		t.Fatal("headingless task unexpectedly has a heading path")
+	}
+	if got := paths[3]; len(got) != 1 || got[0].Text != "Backend" || got[0].Line != 2 {
+		t.Errorf("parent path = %#v", got)
+	}
+	if got := paths[5]; len(got) != 2 || got[0].Text != "Backend" || got[1].Text != "Bugs" {
+		t.Errorf("nested path = %#v", got)
+	}
+	if got := paths[7]; len(got) != 1 || got[0].Text != "Backend" || got[0].Line != 6 {
+		t.Errorf("repeated path = %#v", got)
+	}
+}
+
+func TestHeadingPathsOmitEmptyHeadings(t *testing.T) {
+	f, err := Parse("work/oncall.md", []byte("#\n- [ ] parent\n## Child\n- [ ] nested\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	paths := f.HeadingPaths()
+	if got := paths[2]; len(got) != 0 {
+		t.Errorf("task under empty heading has path %#v", got)
+	}
+	if got := paths[4]; len(got) != 1 || got[0].Text != "Child" {
+		t.Errorf("nested task path = %#v", got)
+	}
+}
+
 // A blank line ends a block: loose lists are never reordered. This is the
 // documented consequence of the fence rule.
 func TestBlankLineEndsBlock(t *testing.T) {

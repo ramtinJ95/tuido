@@ -33,6 +33,7 @@ func run(args []string) int {
 	if len(args) == 0 {
 		args = []string{"ls"}
 	}
+	args = normaliseScopeFirst(args)
 	cmd, rest := args[0], args[1:]
 
 	var err error
@@ -104,6 +105,37 @@ func run(args []string) int {
 	}
 	render.Errorf("%v", err)
 	return code
+}
+
+// normaliseScopeFirst makes a list or workspace usable as a command context:
+// `tuido work/oncall ls --all` is the additive spelling of
+// `tuido ls work/oncall --all`. Existing command-first forms always win, so a
+// command name is never reinterpreted as a scope.
+func normaliseScopeFirst(args []string) []string {
+	if len(args) < 2 || isCommand(args[0]) || !isScopedCommand(args[1]) {
+		return args
+	}
+	return append(append([]string{args[1]}, args[2:]...), args[0])
+}
+
+func isScopedCommand(s string) bool {
+	switch s {
+	case "sort", "fmt", "ls", "list", "open", "o", "path":
+		return true
+	}
+	return false
+}
+
+func isCommand(s string) bool {
+	switch s {
+	case "init", "add", "a", "done", "d", "sort", "fmt", "ls", "list",
+		"open", "o", "path", "use", "sync", "id", "agents", "upgrade",
+		"show", "_lists", "_workspaces", "_commit", "internal-sync",
+		"internal-update-check", "help", "-h", "--help", "version",
+		"--version", "-v":
+		return true
+	}
+	return false
 }
 
 func exitCode(err error) int {
@@ -221,6 +253,9 @@ func usage(w *os.File) {
   tuido id    <fuzzy…>             stamp a short id on a task
   tuido agents                     print a briefing for coding agents
   tuido upgrade [--check]          install the latest release
+
+Scoped commands also accept the list first: "tuido work/oncall ls" is the same
+as "tuido ls work/oncall" (also: open, sort, fmt and path).
 
 Flags may appear before or after the text; -- ends flag parsing.
 Exit codes: 0 ok, 1 user error, 2 internal, 3 file conflicted, 4 not initialised.

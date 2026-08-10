@@ -80,6 +80,39 @@ func TestHiddenFooter(t *testing.T) {
 	}
 }
 
+func TestGroupsPreserveMarkdownHeadingHierarchy(t *testing.T) {
+	f, err := task.Parse("work/oncall.md", []byte(
+		"- [ ] ungrouped\n"+
+			"# Backend\n- [ ] parent\n"+
+			"### Bugs\n- [ ] nested\n"+
+			"# Backend\n- [ ] repeated\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	newTestRenderer(&buf).Groups([]Group{{
+		Ref:      "work/oncall",
+		Tasks:    f.Tasks(),
+		Headings: f.HeadingPaths(),
+	}}, false)
+	out := buf.String()
+
+	for _, want := range []string{
+		"work/oncall\n",
+		"  •  ungrouped",
+		"  Backend\n    •  parent",
+		"    Bugs\n      •  nested",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+	if n := strings.Count(out, "  Backend\n"); n != 2 {
+		t.Errorf("rendered Backend %d times, want 2 for repeated headings:\n%s", n, out)
+	}
+}
+
 func TestEmptyRendersSomething(t *testing.T) {
 	var buf bytes.Buffer
 	newTestRenderer(&buf).Groups(nil, false)

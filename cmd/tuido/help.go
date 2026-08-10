@@ -97,6 +97,7 @@ var helps = map[string]help{
 		summary: "reorder tasks within their blocks",
 		synopsis: []string{
 			"tuido sort [list] [flags]",
+			"tuido <list> sort [flags]",
 		},
 		notes: []string{
 			"Sorts task lines within each contiguous run of them. Headings, prose,",
@@ -116,6 +117,7 @@ var helps = map[string]help{
 		summary: "expand shorthand into canonical fields",
 		synopsis: []string{
 			"tuido fmt [list] [flags]    rewrite lists in place",
+			"tuido <list> fmt [flags]    equivalent scope-first form",
 			"tuido fmt -                 filter stdin to stdout, for editor integration",
 		},
 		notes: []string{
@@ -152,11 +154,14 @@ var helps = map[string]help{
 		summary: "show actionable tasks",
 		synopsis: []string{
 			"tuido ls [list] [flags]",
+			"tuido <list> ls [flags]",
 		},
 		notes: []string{
 			"Hides completed, cancelled, blocked, not-yet-started and future-scheduled",
 			"tasks, and prints a footer counting each reason. --all shows everything",
 			"in every workspace.",
+			"Visible tasks are grouped first by list, then by their nested Markdown",
+			"headings. Empty headings and headings with only hidden tasks are omitted.",
 			"",
 			"--json emits a JSON array of task objects on stdout, with warnings on",
 			"stderr. Each object carries workspace, list, path, line, state, desc,",
@@ -170,6 +175,7 @@ var helps = map[string]help{
 		examples: []string{
 			"tuido ls",
 			"tuido ls oncall",
+			"tuido work/oncall ls",
 			"tuido ls -t infra --due week",
 			"tuido ls --all",
 			"tuido ls --json --all | jq -r '.[].desc'",
@@ -179,6 +185,7 @@ var helps = map[string]help{
 		summary: "open a list, or the whole repo, in $EDITOR",
 		synopsis: []string{
 			"tuido open [query] [flags]",
+			"tuido <list> open [flags]",
 		},
 		notes: []string{
 			"No query opens a picker over every list. The editor is started with its",
@@ -198,6 +205,7 @@ var helps = map[string]help{
 		summary: "print the resolved file path",
 		synopsis: []string{
 			"tuido path [query] [flags]",
+			"tuido <list> path [flags]",
 		},
 		notes: []string{
 			"The primitive `open` is built on. Prints one absolute path and exits.",

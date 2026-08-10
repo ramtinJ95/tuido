@@ -187,6 +187,12 @@ up the newest tag.
 | `tuido upgrade [--check]` | install the latest release |
 | `tuido init` | first-run setup |
 
+Commands that take a list can also put it first. `tuido work/oncall ls` and
+`tuido ls work/oncall` are equivalent; the same scope-first form works with
+`open`, `sort`, `fmt`, and `path`. Human-readable `ls` output keeps that
+structure visible: tasks are grouped by list and then by their nested Markdown
+headings. Headings with no visible tasks are omitted.
+
 Flags may appear before or after the text — `tuido add rotate certs -p high`
 works. `--` ends flag parsing.
 
@@ -423,6 +429,7 @@ under `Unreleased`, then move them into a dated version section when releasing.
 ```sh
 make test     # everything
 make fuzz     # 60s on the parser — the highest-value test here
+make fuzz-headings # 30s each on heading discovery and grouped rendering
 make check    # vet + test + gofmt
 ```
 

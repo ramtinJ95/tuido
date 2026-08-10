@@ -55,7 +55,11 @@ func cmdLs(args []string) error {
 		if err != nil {
 			return err
 		}
-		g := render.Group{Ref: l.Ref(), Hidden: map[string]int{}}
+		g := render.Group{
+			Ref:      l.Ref(),
+			Headings: f.HeadingPaths(),
+			Hidden:   map[string]int{},
+		}
 		for _, t := range f.Tasks() {
 			if !matchesFilters(t, *tags, cutoff) {
 				continue

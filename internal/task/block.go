@@ -22,6 +22,14 @@ type Item struct {
 	Task       *Task
 }
 
+// Heading identifies one Markdown heading in a file. Line disambiguates
+// repeated headings with the same text, so consumers can preserve the source
+// structure rather than accidentally merging two sections.
+type Heading struct {
+	Text string
+	Line int // 1-based
+}
+
 func findBlocks(lines []Line) []Block {
 	var (
 		blocks  []Block
@@ -151,6 +159,39 @@ func (f *File) Sections() []string {
 		}
 	}
 	return out
+}
+
+// HeadingPaths maps each task line to the active Markdown heading hierarchy.
+// Missing levels are collapsed: a lone ### heading is still the first visible
+// level rather than being indented beneath two imaginary parents.
+func (f *File) HeadingPaths() map[int][]Heading {
+	paths := make(map[int][]Heading)
+	active := make([]*Heading, 6)
+	for i, ln := range f.Lines {
+		switch ln.Kind {
+		case LineHeading:
+			level := headingLevel(ln.Raw)
+			h := &Heading{
+				Text: strings.TrimSpace(strings.TrimLeft(ln.Raw, "# ")),
+				Line: i + 1,
+			}
+			active[level-1] = h
+			for n := level; n < len(active); n++ {
+				active[n] = nil
+			}
+		case LineTask:
+			path := make([]Heading, 0, len(active))
+			for _, h := range active {
+				if h != nil && h.Text != "" {
+					path = append(path, *h)
+				}
+			}
+			if len(path) > 0 {
+				paths[ln.Task.Line] = path
+			}
+		}
+	}
+	return paths
 }
 
 func headingLevel(raw string) int {
