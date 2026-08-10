@@ -33,7 +33,7 @@ func TestPlainOutputHasNoEscapes(t *testing.T) {
 	if strings.Contains(out, "\x1b") {
 		t.Errorf("escape sequences with Color=false: %q", out)
 	}
-	for _, want := range []string{"work/oncall", "▲", "fix the drain", "08-09", "2d"} {
+	for _, want := range []string{"work/oncall", "▴", "fix the drain", "08-09", "2d"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %q:\n%s", want, out)
 		}
@@ -130,12 +130,23 @@ func TestGlyphSelection(t *testing.T) {
 	}
 }
 
-// Every glyph tuido emits must be single-width, or the columns drift.
-func TestGlyphsAreSingleWidth(t *testing.T) {
-	for _, g := range []string{gHighest, gHigh, gMedium, gNormal, gLow, gLowest,
-		gProgress, gDone, gCancelled, gBlocked} {
+// Every glyph tuido emits must be single-width, or the columns drift. They
+// must also be pairwise distinct, or two states become indistinguishable in
+// terminals that don't render the colour difference.
+func TestGlyphsAreSingleWidthAndDistinct(t *testing.T) {
+	seen := map[string]string{}
+	for name, g := range map[string]string{
+		"gHighest": gHighest, "gHigh": gHigh, "gMedium": gMedium,
+		"gNormal": gNormal, "gLow": gLow, "gLowest": gLowest,
+		"gProgress": gProgress, "gDone": gDone,
+		"gCancelled": gCancelled, "gBlocked": gBlocked,
+	} {
 		if w := width(g); w != 1 {
 			t.Errorf("glyph %q is %d columns wide", g, w)
 		}
+		if prev, dup := seen[g]; dup {
+			t.Errorf("glyph %q used by both %s and %s", g, prev, name)
+		}
+		seen[g] = name
 	}
 }
