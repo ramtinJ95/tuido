@@ -7,6 +7,14 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-08-10
+
+### Fixed
+
+- `tuido ls` rendered high (p2) tasks with the same ▲ glyph as highest (p1),
+  leaving only a bold-versus-regular colour difference to tell them apart.
+  High now renders as ▴, mirroring the low/lowest ▽/▿ pair.
+
 ## [0.6.0] - 2026-08-09
 
 ### Added
@@ -108,7 +116,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   sorting, quick capture and completion, fuzzy task addressing, workspace and
   list resolution, non-blocking Git synchronization, and terminal rendering.
 
-[Unreleased]: https://github.com/ramtinJ95/tuido/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/ramtinJ95/tuido/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/ramtinJ95/tuido/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/ramtinJ95/tuido/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/ramtinJ95/tuido/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/ramtinJ95/tuido/compare/v0.3.2...v0.4.0
