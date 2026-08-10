@@ -12,7 +12,7 @@ $ tuido add rotate vault certs -p high -d friday
 
 $ tuido ls
 work/oncall
-  ▲  Fix ALB drain timeout                              08-09   2d
+  ▴  Fix ALB drain timeout                              08-09   2d
   △  Rotate vault certs                                         6d
   •  Chase SRE on cutover                                      16d
 
