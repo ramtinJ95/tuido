@@ -15,7 +15,7 @@ _tuido_workspaces() {
 }
 
 _tuido() {
-  local -a commands
+  local -a commands scoped_commands
   commands=(
     'init:first-run setup'
     'add:capture a task'
@@ -31,13 +31,32 @@ _tuido() {
     'agents:print a briefing for coding agents'
     'upgrade:install the latest release'
   )
+  scoped_commands=(
+    'ls:show actionable tasks'
+    'open:open this list in $EDITOR'
+    'sort:reorder tasks within this list'
+    'fmt:expand shorthand in this list'
+    'path:print this list file path'
+  )
 
   _arguments -C '1: :->cmd' '*:: :->args'
 
   case $state in
-    cmd) _describe -t commands 'tuido command' commands ;;
+    cmd)
+      _alternative \
+        'commands:tuido command:commands' \
+        'lists:list scope:_tuido_lists'
+      ;;
     args)
-      case $words[1] in
+      local selected=$words[1]
+      if [[ $selected != (init|add|a|done|d|sort|fmt|ls|list|open|o|path|use|sync|id|agents|upgrade|help|version) ]]; then
+        if (( CURRENT == 2 )); then
+          _describe -t commands 'scoped command' scoped_commands
+          return
+        fi
+        selected=$words[2]
+      fi
+      case $selected in
         add)
           _arguments \
             '(-p --prio)'{-p,--prio}'[priority]:priority:(highest high medium normal low lowest)' \
@@ -55,7 +74,7 @@ _tuido() {
             '(-w --workspace)'{-w,--workspace}'[workspace]:workspace:_tuido_workspaces' \
             '1:list:_tuido_lists'
           ;;
-        ls)
+        ls|list)
           _arguments \
             '--all[show everything]' \
             '(-t --tag)'{-t,--tag}'[tag]:tag:' \
@@ -70,7 +89,7 @@ _tuido() {
             '(-w --workspace)'{-w,--workspace}'[workspace]:workspace:_tuido_workspaces' \
             '1:list:_tuido_lists'
           ;;
-        open|path) _arguments '--all[search every workspace]' '1:list:_tuido_lists' ;;
+        open|o|path) _arguments '--all[search every workspace]' '1:list:_tuido_lists' ;;
         use)       _arguments '1:workspace:_tuido_workspaces' ;;
         sync)      _arguments '--status[print state without touching the network]' ;;
         upgrade)

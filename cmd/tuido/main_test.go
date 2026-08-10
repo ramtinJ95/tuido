@@ -125,6 +125,83 @@ func TestInitThenCaptureThenList(t *testing.T) {
 	}
 }
 
+func TestLsGroupsVisibleTasksByMarkdownHeadings(t *testing.T) {
+	e := newEnv(t)
+	e.init()
+	e.write("work/oncall.md",
+		"- [ ] ungrouped\n"+
+			"# Backend\n- [ ] parent\n"+
+			"### Bugs\n- [/] nested\n"+
+			"# Hidden section\n- [x] finished\n"+
+			"# Empty section\nnotes only\n")
+
+	out := e.mustRun("ls", "work/oncall").stdout
+	for _, want := range []string{
+		"work/oncall\n",
+		"  •  ungrouped",
+		"  Backend\n    •  parent",
+		"    Bugs\n      ◐  nested",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("ls output missing %q:\n%s", want, out)
+		}
+	}
+	for _, unwanted := range []string{"Hidden section", "Empty section", "finished"} {
+		if strings.Contains(out, unwanted) {
+			t.Errorf("ls output contains hidden heading or task %q:\n%s", unwanted, out)
+		}
+	}
+}
+
+func TestScopeFirstCommands(t *testing.T) {
+	e := newEnv(t)
+	e.init()
+	e.write("work/oncall.md", "- [ ] low ⏬\n- [ ] high 🔺\n")
+	e.write("work/inbox.md", "- [ ] inbox only\n")
+
+	out := e.mustRun("work/oncall", "ls").stdout
+	if !strings.Contains(out, "work/oncall") || !strings.Contains(out, "low") || strings.Contains(out, "inbox only") {
+		t.Errorf("scope-first ls selected the wrong lists:\n%s", out)
+	}
+	workspaceOut := e.mustRun("work", "ls").stdout
+	for _, want := range []string{"work/inbox", "inbox only", "work/oncall", "low"} {
+		if !strings.Contains(workspaceOut, want) {
+			t.Errorf("workspace-scoped ls missing %q:\n%s", want, workspaceOut)
+		}
+	}
+
+	e.mustRun("work/oncall", "sort")
+	if body := e.read("work/oncall.md"); !strings.HasPrefix(body, "- [ ] high 🔺\n") {
+		t.Errorf("scope-first sort did not sort the selected list:\n%s", body)
+	}
+
+	path := strings.TrimSpace(e.mustRun("work/oncall", "path").stdout)
+	if path != filepath.Join(e.root, "work", "oncall.md") {
+		t.Errorf("scope-first path = %q", path)
+	}
+}
+
+func TestNormaliseScopeFirstKeepsCommandFirstUnambiguous(t *testing.T) {
+	unchanged := [][]string{
+		{"ls", "work/oncall"},
+		{"help", "ls"},
+		{"fmt", "-"},
+	}
+	for _, args := range unchanged {
+		if got := normaliseScopeFirst(args); strings.Join(got, "|") != strings.Join(args, "|") {
+			t.Errorf("normaliseScopeFirst(%v) = %v", args, got)
+		}
+	}
+
+	for _, cmd := range []string{"ls", "list", "sort", "fmt", "open", "o", "path"} {
+		got := normaliseScopeFirst([]string{"work/oncall", cmd, "--all"})
+		want := []string{cmd, "--all", "work/oncall"}
+		if strings.Join(got, "|") != strings.Join(want, "|") {
+			t.Errorf("normaliseScopeFirst with %s = %v, want %v", cmd, got, want)
+		}
+	}
+}
+
 // Flags after the positional text is the whole reason pflag is here.
 func TestFlagsAfterText(t *testing.T) {
 	e := newEnv(t)

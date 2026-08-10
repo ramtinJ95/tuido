@@ -82,9 +82,10 @@ func (r *Renderer) style(code, s string) string {
 
 // Group is one list's worth of output.
 type Group struct {
-	Ref    string
-	Tasks  []*task.Task
-	Hidden map[string]int // reason -> count
+	Ref      string
+	Tasks    []*task.Task
+	Headings map[int][]task.Heading // task line -> active heading hierarchy
+	Hidden   map[string]int         // reason -> count
 }
 
 // Warn prints the one-line sync warning that sits above normal output.
@@ -111,8 +112,20 @@ func (r *Renderer) Groups(groups []Group, showAllHint bool) {
 		first = false
 
 		fmt.Fprintln(r.w, r.style(sgrHeader, g.Ref))
+		var previous []task.Heading
 		for _, t := range g.Tasks {
-			fmt.Fprintln(r.w, r.line(t))
+			path := g.Headings[t.Line]
+			common := commonHeadings(previous, path)
+			for depth := common; depth < len(path); depth++ {
+				indent := strings.Repeat(" ", 2*(depth+1))
+				fmt.Fprintln(r.w, indent+r.style(sgrHeader, path[depth].Text))
+			}
+			lead := 2
+			if len(path) > 0 {
+				lead = 2 * (len(path) + 1)
+			}
+			fmt.Fprintln(r.w, r.lineAt(t, lead))
+			previous = path
 		}
 		if n := total(g.Hidden); n > 0 {
 			fmt.Fprintln(r.w)
@@ -127,8 +140,22 @@ func (r *Renderer) Groups(groups []Group, showAllHint bool) {
 	}
 }
 
+func commonHeadings(a, b []task.Heading) int {
+	n := min(len(a), len(b))
+	for i := 0; i < n; i++ {
+		if a[i].Line != b[i].Line {
+			return i
+		}
+	}
+	return n
+}
+
 // line lays out one task: glyph, description, due date, age.
 func (r *Renderer) line(t *task.Task) string {
+	return r.lineAt(t, 2)
+}
+
+func (r *Renderer) lineAt(t *task.Task, lead int) string {
 	glyph, code := r.glyph(t)
 
 	due, dueCode := "", sgrMeta
@@ -146,7 +173,6 @@ func (r *Renderer) line(t *task.Task) string {
 	}
 
 	const (
-		lead   = 2 // indent
 		gap    = 2
 		dueCol = 5
 		ageCol = 4

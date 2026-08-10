@@ -5,7 +5,7 @@ VERSION := $(shell test -z "$$(git status --porcelain 2>/dev/null)" && \
 	git describe --tags --exact-match 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 
-.PHONY: all build install uninstall test fuzz vet fmt check clean
+.PHONY: all build install uninstall test fuzz fuzz-headings vet fmt check clean
 
 all: build
 
@@ -27,6 +27,12 @@ test:
 # quietly rewrites a line and git dutifully commits it.
 fuzz:
 	$(GO) test ./internal/task -run FuzzParse -fuzz FuzzParse -fuzztime=60s
+
+# Model-check heading discovery and rendering across arbitrary temporary
+# Markdown documents, including filtered subsets that omit whole sections.
+fuzz-headings:
+	$(GO) test ./internal/task -run '^$$' -fuzz '^FuzzHeadingPaths$$' -fuzztime=30s
+	$(GO) test ./internal/render -run '^$$' -fuzz '^FuzzGroupsWithHeadings$$' -fuzztime=30s
 
 vet:
 	$(GO) vet ./...
