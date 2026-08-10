@@ -36,7 +36,7 @@ const (
 // the columns aligned regardless of the terminal's emoji metrics.
 const (
 	gHighest   = "▲"
-	gHigh      = "▲"
+	gHigh      = "▴"
 	gMedium    = "△"
 	gNormal    = "•"
 	gLow       = "▽"
