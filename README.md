@@ -175,7 +175,8 @@ up the newest tag.
 |---|---|
 | `tuido add [flags] <text…>` | capture a task (`-p` prio, `-d` due, `-t` tag, `-l` list) |
 | `tuido done <fuzzy…>` | mark a task done |
-| `tuido ls [list] [--all] [--json]` | show actionable tasks |
+| `tuido archive [list] [--dry-run]` | sweep closed tasks into the list's `_archive/` mirror |
+| `tuido ls [list] [--all] [--json] [--archived]` | show actionable tasks |
 | `tuido sort [list] [--by …]` | reorder tasks within their blocks |
 | `tuido fmt [list] \| fmt -` | expand `:p2` / `:due monday` shorthand into fields |
 | `tuido open [query] [--root]` | open a list, or the whole repo, in `$EDITOR` |
@@ -189,7 +190,7 @@ up the newest tag.
 
 Commands that take a list can also put it first. `tuido work/oncall ls` and
 `tuido ls work/oncall` are equivalent; the same scope-first form works with
-`open`, `sort`, `fmt`, and `path`. Human-readable `ls` output keeps that
+`open`, `sort`, `fmt`, `path`, and `archive`. Human-readable `ls` output keeps that
 structure visible: tasks are grouped by list and then by their nested Markdown
 headings. Headings with no visible tasks are omitted.
 
@@ -237,10 +238,18 @@ A workspace is a directory; a list is a markdown file.
 ~/notes/todo/            git repo root
 ├── work/                workspace
 │   ├── inbox.md         default capture target
-│   └── oncall.md
+│   ├── oncall.md
+│   └── _archive/        where `tuido archive` moves closed tasks
+│       └── oncall.md    mirrors the list, headings recreated
 └── personal/
     └── inbox.md
 ```
+
+`_archive/` holds finished work swept out of the daily lists: same markdown,
+same repo, same sync — just out of every command's default scope. Each list
+mirrors to its own file with its headings recreated, so an archived task keeps
+its workspace, list and section. `tuido ls --archived` reads it back;
+un-archiving is cutting the line back in your editor.
 
 Config is machine-local and lives outside the task repo, so the repo holds only
 tasks:
@@ -418,8 +427,8 @@ without changing its meaning is reported instead of mangled.
 ## Not implemented
 
 Recurrence *generation* (`🔁` rules are parsed and preserved), `🏁` actions,
-archiving, dictation, and sorting across blank lines. None of them require a
-file-format change to add later.
+dictation, and sorting across blank lines. None of them require a file-format
+change to add later.
 
 ## Development
 

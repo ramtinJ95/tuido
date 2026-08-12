@@ -20,6 +20,7 @@ _tuido() {
     'init:first-run setup'
     'add:capture a task'
     'done:mark a task done'
+    'archive:sweep closed tasks into the archive mirror'
     'sort:reorder tasks within their blocks'
     'fmt:expand shorthand into canonical fields'
     'ls:show actionable tasks'
@@ -35,6 +36,7 @@ _tuido() {
     'ls:show actionable tasks'
     'open:open this list in $EDITOR'
     'sort:reorder tasks within this list'
+    'archive:sweep this list'\''s closed tasks'
     'fmt:expand shorthand in this list'
     'path:print this list file path'
   )
@@ -49,7 +51,7 @@ _tuido() {
       ;;
     args)
       local selected=$words[1]
-      if [[ $selected != (init|add|a|done|d|sort|fmt|ls|list|open|o|path|use|sync|id|agents|upgrade|help|version) ]]; then
+      if [[ $selected != (init|add|a|done|d|archive|sort|fmt|ls|list|open|o|path|use|sync|id|agents|upgrade|help|version) ]]; then
         if (( CURRENT == 2 )); then
           _describe -t commands 'scoped command' scoped_commands
           return
@@ -80,6 +82,14 @@ _tuido() {
             '(-t --tag)'{-t,--tag}'[tag]:tag:' \
             '--due[due on or before]:when:(today tomorrow week)' \
             '--json[emit a JSON array of tasks]' \
+            '--archived[list the archive mirrors]' \
+            '(-w --workspace)'{-w,--workspace}'[workspace]:workspace:_tuido_workspaces' \
+            '1:list:_tuido_lists'
+          ;;
+        archive)
+          _arguments \
+            '--dry-run[report what would move, write nothing]' \
+            '--all[sweep every workspace]' \
             '(-w --workspace)'{-w,--workspace}'[workspace]:workspace:_tuido_workspaces' \
             '1:list:_tuido_lists'
           ;;
