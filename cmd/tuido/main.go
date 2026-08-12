@@ -210,9 +210,10 @@ func (a *app) warn() {
 	}
 }
 
-// commit records a mutation locally and kicks off a detached push.
-func (a *app) commit(path, message string) {
-	if err := a.repo.Commit(path, message); err != nil {
+// commit records a mutation locally, in one commit, and kicks off a detached
+// push.
+func (a *app) commit(message string, paths ...string) {
+	if err := a.repo.Commit(message, paths...); err != nil {
 		render.Errorf("%v", err) // visible, but not fatal: the file is already written
 		return
 	}

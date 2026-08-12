@@ -69,7 +69,7 @@ func cmdSort(args []string) error {
 		}
 		touched++
 		fmt.Printf("✓ sorted %s (%d moved, by %s)\n", l.Ref(), moved, mode)
-		a.commit(l.Path, fmt.Sprintf("sort: %s by %s", l.Ref(), mode))
+		a.commit(fmt.Sprintf("sort: %s by %s", l.Ref(), mode), l.Path)
 	}
 	if touched == 0 {
 		fmt.Println("· already sorted")

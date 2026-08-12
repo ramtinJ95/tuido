@@ -79,7 +79,7 @@ func TestCommitThenPushThenFastForward(t *testing.T) {
 
 	p := filepath.Join(aDir, "work", "inbox.md")
 	write(t, p, "- [ ] first\n- [ ] second\n")
-	if err := a.Commit(p, "add: second (work/inbox)"); err != nil {
+	if err := a.Commit("add: second (work/inbox)", p); err != nil {
 		t.Fatal(err)
 	}
 	if s := a.ReadState(); s.Unpushed != 1 {
@@ -118,7 +118,7 @@ func TestDivergenceIsDetectedAndWarned(t *testing.T) {
 
 	pa := filepath.Join(aDir, "work", "inbox.md")
 	write(t, pa, "- [ ] first\n- [ ] from a\n")
-	if err := a.Commit(pa, "add: from a"); err != nil {
+	if err := a.Commit("add: from a", pa); err != nil {
 		t.Fatal(err)
 	}
 	if err := a.Push(); err != nil {
@@ -129,7 +129,7 @@ func TestDivergenceIsDetectedAndWarned(t *testing.T) {
 	// actually conflicting.
 	pb := filepath.Join(bDir, "work", "personal.md")
 	write(t, pb, "- [ ] from b\n")
-	if err := b.Commit(pb, "add: from b"); err != nil {
+	if err := b.Commit("add: from b", pb); err != nil {
 		t.Fatal(err)
 	}
 
@@ -170,7 +170,7 @@ func TestSyncStopsOnContentConflict(t *testing.T) {
 
 	pa := filepath.Join(aDir, "work", "inbox.md")
 	write(t, pa, "- [ ] first\n- [ ] from a\n")
-	if err := a.Commit(pa, "add: from a"); err != nil {
+	if err := a.Commit("add: from a", pa); err != nil {
 		t.Fatal(err)
 	}
 	if err := a.Push(); err != nil {
@@ -179,7 +179,7 @@ func TestSyncStopsOnContentConflict(t *testing.T) {
 
 	pb := filepath.Join(bDir, "work", "inbox.md")
 	write(t, pb, "- [ ] first\n- [ ] from b\n")
-	if err := b.Commit(pb, "add: from b"); err != nil {
+	if err := b.Commit("add: from b", pb); err != nil {
 		t.Fatal(err)
 	}
 
@@ -244,7 +244,7 @@ func TestDisabledOutsideAGitRepo(t *testing.T) {
 	if r.Enabled {
 		t.Fatal("enabled outside a git repo")
 	}
-	if err := r.Commit(filepath.Join(dir, "x.md"), "msg"); err != nil {
+	if err := r.Commit("msg", filepath.Join(dir, "x.md")); err != nil {
 		t.Errorf("commit: %v", err)
 	}
 	if err := r.Background(); err != nil {
@@ -278,7 +278,7 @@ func TestLocalOnlyRepoIsSilent(t *testing.T) {
 
 	p := filepath.Join(dir, "work", "inbox.md")
 	write(t, p, "- [ ] local only\n")
-	if err := r.Commit(p, "add: local only"); err != nil {
+	if err := r.Commit("add: local only", p); err != nil {
 		t.Fatal(err)
 	}
 	if out := git(t, dir, "log", "--oneline"); !strings.Contains(out, "add: local only") {
@@ -317,7 +317,7 @@ func TestFirstPushSetsUpstream(t *testing.T) {
 	r := repoFor(t, work)
 	p := filepath.Join(work, "work", "inbox.md")
 	write(t, p, "- [ ] first ever\n")
-	if err := r.Commit(p, "add: first ever"); err != nil {
+	if err := r.Commit("add: first ever", p); err != nil {
 		t.Fatal(err)
 	}
 	if err := r.Push(); err != nil {
@@ -332,7 +332,7 @@ func TestCommitWithNothingStagedIsNotAnError(t *testing.T) {
 	_, aDir, _ := testRepos(t)
 	a := repoFor(t, aDir)
 	p := filepath.Join(aDir, "work", "inbox.md")
-	if err := a.Commit(p, "no change"); err != nil {
+	if err := a.Commit("no change", p); err != nil {
 		t.Errorf("commit with no change: %v", err)
 	}
 }
