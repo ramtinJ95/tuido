@@ -29,7 +29,11 @@ func cmdLs(args []string) error {
 	if err != nil {
 		return err
 	}
-	lists, err := a.st.FindLists(strings.Join(fs.Args(), " "), *all)
+	find := a.st.FindLists
+	if *fl.archived {
+		find = a.st.FindArchivedLists
+	}
+	lists, err := find(strings.Join(fs.Args(), " "), *all)
 	if err != nil {
 		return err
 	}
@@ -64,7 +68,8 @@ func cmdLs(args []string) error {
 			if !matchesFilters(t, *tags, cutoff) {
 				continue
 			}
-			if reason := t.Hidden(today, openIDs); reason != "" && !*all {
+			// Archived tasks are all closed; hiding them would show nothing.
+			if reason := t.Hidden(today, openIDs); reason != "" && !*all && !*fl.archived {
 				g.Hidden[reason]++
 				continue
 			}

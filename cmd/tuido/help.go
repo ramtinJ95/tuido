@@ -93,6 +93,33 @@ var helps = map[string]help{
 			"tuido done drain --all",
 		},
 	},
+	"archive": {
+		summary: "sweep closed tasks into the list's archive mirror",
+		synopsis: []string{
+			"tuido archive [list] [flags]",
+			"tuido <list> archive [flags]",
+		},
+		notes: []string{
+			"Moves every done and cancelled task in scope into",
+			"<workspace>/_archive/<list>.md, recreating the headings it lived under,",
+			"so daily lists stay short without losing where finished work belonged.",
+			"Lines move byte-for-byte and keep their completion dates.",
+			"",
+			"A done task with a still-open subtask is skipped and reported — open",
+			"work never disappears from view. Nothing archives automatically:",
+			"`done` marks, `archive` moves.",
+			"",
+			"The archive is plain markdown in the same repo, synced and committed",
+			"like everything else. Read it with `tuido ls --archived` or your",
+			"editor; to un-archive, cut the line back in the editor.",
+		},
+		examples: []string{
+			"tuido archive",
+			"tuido archive oncall",
+			"tuido archive --dry-run",
+			"tuido ls --archived",
+		},
+	},
 	"sort": {
 		summary: "reorder tasks within their blocks",
 		synopsis: []string{
@@ -159,7 +186,8 @@ var helps = map[string]help{
 		notes: []string{
 			"Hides completed, cancelled, blocked, not-yet-started and future-scheduled",
 			"tasks, and prints a footer counting each reason. --all shows everything",
-			"in every workspace.",
+			"in every workspace. --archived reads the _archive mirrors instead of",
+			"the live lists, with the hiding rules off.",
 			"Visible tasks are grouped first by list, then by their nested Markdown",
 			"headings. Empty headings and headings with only hidden tasks are omitted.",
 			"",

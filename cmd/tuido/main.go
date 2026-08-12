@@ -44,6 +44,8 @@ func run(args []string) int {
 		err = cmdAdd(rest)
 	case "done", "d":
 		err = cmdDone(rest)
+	case "archive":
+		err = cmdArchive(rest)
 	case "sort":
 		err = cmdSort(rest)
 	case "fmt":
@@ -120,7 +122,7 @@ func normaliseScopeFirst(args []string) []string {
 
 func isScopedCommand(s string) bool {
 	switch s {
-	case "sort", "fmt", "ls", "list", "open", "o", "path":
+	case "sort", "fmt", "ls", "list", "open", "o", "path", "archive":
 		return true
 	}
 	return false
@@ -128,7 +130,7 @@ func isScopedCommand(s string) bool {
 
 func isCommand(s string) bool {
 	switch s {
-	case "init", "add", "a", "done", "d", "sort", "fmt", "ls", "list",
+	case "init", "add", "a", "done", "d", "archive", "sort", "fmt", "ls", "list",
 		"open", "o", "path", "use", "sync", "id", "agents", "upgrade",
 		"show", "_lists", "_workspaces", "_commit", "internal-sync",
 		"internal-update-check", "help", "-h", "--help", "version",
@@ -244,6 +246,7 @@ func usage(w *os.File) {
   tuido init  [--root <path>] [--workspace <name>] [--git|--no-git] [--remote <url>]
   tuido add   [flags] <text…>      capture a task  (-p prio  -d due  -t tag  -l list)
   tuido done  <fuzzy…>             mark a task done
+  tuido archive [list] [--dry-run] sweep closed tasks into _archive/ mirrors
   tuido sort  [list] [--by …]      reorder tasks within their blocks
   tuido fmt   [list] | fmt -       expand :p2 / :due monday shorthand into fields
   tuido ls    [list] [--all]       show actionable tasks
