@@ -38,7 +38,7 @@ func findBlocks(lines []Line) []Block {
 	for i := 0; i < len(lines); i++ {
 		switch lines[i].Kind {
 		case LineHeading:
-			section = strings.TrimSpace(strings.TrimLeft(lines[i].Raw, "# "))
+			section = HeadingText(lines[i].Raw)
 			continue
 		case LineTask:
 			// fall through to block collection
@@ -81,6 +81,25 @@ func findBlocks(lines []Line) []Block {
 		i = end
 	}
 	return blocks
+}
+
+// RemoveLines deletes lines start..end inclusive and reindexes what remains.
+//
+// The trailing-newline property is positional, as in ReorderBlock: when the
+// removed range contained the file's final line and that line had no
+// terminator, the new final line gives its terminator up, so a file that did
+// not end in a newline still doesn't.
+func (f *File) RemoveLines(start, end int) {
+	if start < 0 || end >= len(f.Lines) || start > end {
+		panic("RemoveLines: range out of bounds")
+	}
+	noEOL := end == len(f.Lines)-1 && f.Lines[end].EOL == ""
+	f.Lines = append(f.Lines[:start], f.Lines[end+1:]...)
+	if noEOL && len(f.Lines) > 0 {
+		f.Lines[len(f.Lines)-1].EOL = ""
+	}
+	f.renumber()
+	f.Blocks = findBlocks(f.Lines)
 }
 
 // ReorderBlock rewrites the block's lines in the order given by perm, which is
@@ -133,14 +152,14 @@ func (f *File) SectionRange(name string) (start, end int, ok bool) {
 		if ln.Kind != LineHeading {
 			continue
 		}
-		text := strings.TrimSpace(strings.TrimLeft(ln.Raw, "# "))
+		text := HeadingText(ln.Raw)
 		if strings.ToLower(text) != name {
 			continue
 		}
-		level := headingLevel(ln.Raw)
+		level := HeadingLevel(ln.Raw)
 		end = len(f.Lines) - 1
 		for j := i + 1; j < len(f.Lines); j++ {
-			if f.Lines[j].Kind == LineHeading && headingLevel(f.Lines[j].Raw) <= level {
+			if f.Lines[j].Kind == LineHeading && HeadingLevel(f.Lines[j].Raw) <= level {
 				end = j - 1
 				break
 			}
@@ -155,7 +174,7 @@ func (f *File) Sections() []string {
 	var out []string
 	for _, ln := range f.Lines {
 		if ln.Kind == LineHeading {
-			out = append(out, strings.TrimSpace(strings.TrimLeft(ln.Raw, "# ")))
+			out = append(out, HeadingText(ln.Raw))
 		}
 	}
 	return out
@@ -170,9 +189,9 @@ func (f *File) HeadingPaths() map[int][]Heading {
 	for i, ln := range f.Lines {
 		switch ln.Kind {
 		case LineHeading:
-			level := headingLevel(ln.Raw)
+			level := HeadingLevel(ln.Raw)
 			h := &Heading{
-				Text: strings.TrimSpace(strings.TrimLeft(ln.Raw, "# ")),
+				Text: HeadingText(ln.Raw),
 				Line: i + 1,
 			}
 			active[level-1] = h
@@ -194,7 +213,8 @@ func (f *File) HeadingPaths() map[int][]Heading {
 	return paths
 }
 
-func headingLevel(raw string) int {
+// HeadingLevel is the number of leading '#' runes on a heading line.
+func HeadingLevel(raw string) int {
 	n := 0
 	for _, r := range raw {
 		if r != '#' {
@@ -203,4 +223,10 @@ func headingLevel(raw string) int {
 		n++
 	}
 	return n
+}
+
+// HeadingText is the heading's text with the '#' prefix and surrounding
+// whitespace stripped — the form every heading comparison in tuido uses.
+func HeadingText(raw string) string {
+	return strings.TrimSpace(strings.TrimLeft(raw, "# "))
 }

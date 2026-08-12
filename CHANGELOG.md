@@ -7,6 +7,18 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-12
+
+### Added
+
+- `tuido archive [list] [--all] [--dry-run]` sweeps done and cancelled tasks
+  out of the lists in scope into `<workspace>/_archive/<list>.md`, recreating
+  the headings each task lived under. Lines move byte-for-byte and keep their
+  completion dates; a done task with a still-open subtask is skipped and
+  reported. The scope-first form (`tuido work/oncall archive`) works, and the
+  archive/source move lands as a single git commit.
+- `tuido ls --archived` reads the archive mirrors back.
+
 ## [0.6.2] - 2026-08-10
 
 ### Added

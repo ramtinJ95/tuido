@@ -126,7 +126,13 @@ func (s *Store) Lists(ws string) []List {
 			return nil
 		}
 		if d.IsDir() {
-			if strings.HasPrefix(d.Name(), ".") && p != dir {
+			if p == dir {
+				return nil
+			}
+			// archiveDir is skipped at the workspace root only — the one place
+			// tuido writes it. A deeper directory with that name stays a
+			// normal list dir; the reservation is as small as possible.
+			if strings.HasPrefix(d.Name(), ".") || p == filepath.Join(dir, archiveDir) {
 				return fs.SkipDir
 			}
 			return nil
@@ -177,8 +183,13 @@ func (s *Store) FindLists(query string, all bool) ([]List, error) {
 	if err != nil {
 		return nil, err
 	}
+	return matchLists(scope, query), nil
+}
+
+// matchLists is FindLists' matching, factored out so archived scopes can use it.
+func matchLists(scope []List, query string) []List {
 	if query == "" {
-		return scope, nil
+		return scope
 	}
 	q := strings.ToLower(strings.TrimSpace(query))
 
@@ -189,7 +200,7 @@ func (s *Store) FindLists(query string, all bool) ([]List, error) {
 		}
 	}
 	if len(exact) > 0 {
-		return exact, nil
+		return exact
 	}
 
 	tokens := strings.Fields(strings.ReplaceAll(q, "/", " "))
@@ -207,7 +218,7 @@ func (s *Store) FindLists(query string, all bool) ([]List, error) {
 			out = append(out, l)
 		}
 	}
-	return out, nil
+	return out
 }
 
 // Read parses a list. A conflicted file is refused here, once, so no command

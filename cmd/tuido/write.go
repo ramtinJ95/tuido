@@ -79,7 +79,7 @@ func cmdAdd(args []string) error {
 			return err
 		}
 		fmt.Printf("✓ %s → %s\n", k.Desc, target.Ref())
-		a.commit(target.List.Path, fmt.Sprintf("add: %s (%s)", k.Desc, target.Ref()))
+		a.commit(fmt.Sprintf("add: %s (%s)", k.Desc, target.Ref()), target.List.Path)
 	}
 	return nil
 }
@@ -227,7 +227,7 @@ func cmdDone(args []string) error {
 		return err
 	}
 	fmt.Printf("✓ done: %s → %s\n", k.Desc, hit.Ref)
-	a.commit(f.Path, fmt.Sprintf("done: %s (%s)", k.Desc, hit.Ref))
+	a.commit(fmt.Sprintf("done: %s (%s)", k.Desc, hit.Ref), f.Path)
 	return nil
 }
 
@@ -280,7 +280,7 @@ func cmdID(args []string) error {
 		return err
 	}
 	fmt.Println(id)
-	a.commit(f.Path, fmt.Sprintf("id: %s (%s)", k.Desc, hit.Ref))
+	a.commit(fmt.Sprintf("id: %s (%s)", k.Desc, hit.Ref), f.Path)
 	return nil
 }
 
@@ -308,7 +308,7 @@ func cmdCommit(args []string) error {
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return uerr("%s is not under the todo root %s", fs.Arg(0), a.st.Root)
 	}
-	a.commit(path, "edit: "+strings.TrimSuffix(filepath.ToSlash(rel), ".md"))
+	a.commit("edit: "+strings.TrimSuffix(filepath.ToSlash(rel), ".md"), path)
 	return nil
 }
 

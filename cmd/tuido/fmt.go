@@ -90,7 +90,7 @@ func cmdFmt(args []string) error {
 		} else {
 			fmt.Printf("✓ fmt %s (%d expanded)\n", l.Ref(), applied)
 		}
-		a.commit(l.Path, fmt.Sprintf("fmt: %s", l.Ref()))
+		a.commit(fmt.Sprintf("fmt: %s", l.Ref()), l.Path)
 	}
 	if touched == 0 {
 		fmt.Println("· nothing to expand")

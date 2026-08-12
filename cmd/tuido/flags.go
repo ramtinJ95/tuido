@@ -54,10 +54,11 @@ func registerAdd(fs *pflag.FlagSet) addFlags {
 
 type lsFlags struct {
 	commonFlags
-	all   *bool
-	tags  *[]string
-	dueBy *string
-	json  *bool
+	all      *bool
+	tags     *[]string
+	dueBy    *string
+	json     *bool
+	archived *bool
 }
 
 func registerLs(fs *pflag.FlagSet) lsFlags {
@@ -67,6 +68,7 @@ func registerLs(fs *pflag.FlagSet) lsFlags {
 		tags:        fs.StringSliceP("tag", "t", nil, "only tasks with this tag (repeatable)"),
 		dueBy:       fs.String("due", "", "only tasks due on or before this date (today|tomorrow|week|YYYY-MM-DD)"),
 		json:        fs.Bool("json", false, "emit a JSON array of tasks on stdout"),
+		archived:    fs.Bool("archived", false, "list the _archive mirrors instead of the live lists"),
 	}
 }
 
@@ -110,6 +112,18 @@ func registerScope(fs *pflag.FlagSet) scopeFlags {
 	return scopeFlags{
 		commonFlags: registerCommon(fs),
 		all:         fs.Bool("all", false, "search every workspace"),
+	}
+}
+
+type archiveFlags struct {
+	scopeFlags
+	dryRun *bool
+}
+
+func registerArchive(fs *pflag.FlagSet) archiveFlags {
+	return archiveFlags{
+		scopeFlags: registerScope(fs),
+		dryRun:     fs.Bool("dry-run", false, "report what would move, write nothing"),
 	}
 }
 
@@ -157,6 +171,8 @@ func registerFlags(name string, fs *pflag.FlagSet) {
 		registerCommon(fs)
 	case "done", "path", "id", "fmt":
 		registerScope(fs)
+	case "archive":
+		registerArchive(fs)
 	case "upgrade":
 		registerUpgrade(fs)
 	}

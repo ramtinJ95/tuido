@@ -199,11 +199,11 @@ func (r *Repo) Background() error {
 	return r.writeState(s)
 }
 
-// Commit stages one file and commits it locally. Synchronous and offline, so it
-// costs nothing measurable; the granular messages make `git log` a usable
-// activity record for free.
-func (r *Repo) Commit(path, message string) error {
-	if !r.Enabled {
+// Commit stages the given files and commits them locally, in one commit.
+// Synchronous and offline, so it costs nothing measurable; the granular
+// messages make `git log` a usable activity record for free.
+func (r *Repo) Commit(message string, paths ...string) error {
+	if !r.Enabled || len(paths) == 0 {
 		return nil
 	}
 	unlock, err := r.lock()
@@ -212,17 +212,21 @@ func (r *Repo) Commit(path, message string) error {
 	}
 	defer unlock()
 
-	rel, err := filepath.Rel(r.Root, path)
-	if err != nil {
-		rel = path
+	rels := make([]string, len(paths))
+	for i, p := range paths {
+		rel, err := filepath.Rel(r.Root, p)
+		if err != nil {
+			rel = p
+		}
+		rels[i] = rel
 	}
-	if out, err := r.git("add", "--", rel); err != nil {
+	if out, err := r.git(append([]string{"add", "--"}, rels...)...); err != nil {
 		return fmt.Errorf("git add: %s", firstLine(out))
 	}
-	if out, err := r.git("diff", "--cached", "--quiet", "--", rel); err == nil && out == "" {
+	if out, err := r.git(append([]string{"diff", "--cached", "--quiet", "--"}, rels...)...); err == nil && out == "" {
 		return nil // nothing staged; not an error
 	}
-	if out, err := r.git("commit", "--quiet", "--only", "-m", message, "--", rel); err != nil {
+	if out, err := r.git(append([]string{"commit", "--quiet", "--only", "-m", message, "--"}, rels...)...); err != nil {
 		return fmt.Errorf("git commit: %s", firstLine(out))
 	}
 

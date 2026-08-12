@@ -56,6 +56,8 @@ operations, and direct file edits for bulk changes.
     tuido path <list>                  print a list's absolute file path
     tuido fmt [list]                   expand :p1 / :due / :done shorthand (idempotent)
     tuido sort [list]                  reorder: open before done, then priority and due (idempotent)
+    tuido archive [list] [--dry-run]   move closed tasks to the list's _archive mirror
+    tuido ls --archived                read the archive back
 
 Fuzzy commands fail safe: with no terminal, an ambiguous match prints the
 candidates and exits 1 without changing anything. Recover by adding more
@@ -86,4 +88,7 @@ moves a task across a heading.
 - ` + "`tuido ls`" + ` hides done, cancelled, blocked and not-yet-started tasks;
   add --all to see everything. In --json output each task's ` + "`hidden`" + ` field
   says why a default ls would hide it.
+- Never archive by hand: ` + "`tuido archive`" + ` moves closed tasks into
+  _archive/ preserving their headings, and skips done tasks that still have
+  open subtasks.
 `
