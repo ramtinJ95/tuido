@@ -52,6 +52,7 @@ operations, and direct file edits for bulk changes.
     tuido ls [list] [--all] [--json]   list tasks; --json emits a JSON array
     tuido add <text…> [-p prio] [-d due] [-t tag] [-l list]
     tuido done <words…>                mark done; every word must match the task
+    tuido done --at <path:line> <desc> mark exactly that task done (path/line from --json)
     tuido id <words…>                  print a task's stable id, assigning one if needed
     tuido path <list>                  print a list's absolute file path
     tuido fmt [list]                   expand :p1 / :due / :done shorthand (idempotent)

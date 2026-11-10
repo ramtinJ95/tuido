@@ -711,3 +711,96 @@ func TestAgentsBriefing(t *testing.T) {
 		}
 	}
 }
+
+// --at names one task exactly, for callers that already hold its locator: it
+// acts even where the text alone is ambiguous, and refuses a stale line.
+func TestDoneAtLocator(t *testing.T) {
+	e := newEnv(t)
+	e.init()
+	e.write("work/oncall.md", "- [ ] fix bug\n- [ ] fix bug in login\n")
+	path := filepath.Join(e.root, "work", "oncall.md")
+
+	if r := e.run("done", "fix bug"); r.code != 1 {
+		t.Fatalf("ambiguous text exited %d, want 1", r.code)
+	}
+	e.mustRun("done", "--at", path+":1", "fix bug")
+	body := e.read("work/oncall.md")
+	if !strings.HasPrefix(body, "- [x] fix bug ✅ ") || !strings.Contains(body, "\n- [ ] fix bug in login\n") {
+		t.Fatalf("--at completed the wrong line:\n%s", body)
+	}
+
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{"stale text", []string{"--at", path + ":2", "rotate certs"}, "the file changed"},
+		{"already done", []string{"--at", path + ":1"}, "already done"},
+		{"not a task", []string{"--at", path + ":9"}, "not a task"},
+		{"outside the root", []string{"--at", filepath.Join(e.home, "x.md") + ":1"}, "not a list"},
+		{"bad locator", []string{"--at", "oncall"}, "bad locator"},
+	} {
+		r := e.run(append([]string{"done"}, tc.args...)...)
+		if r.code != 1 || !strings.Contains(r.stderr, tc.want) {
+			t.Errorf("%s: exit %d, stderr %q; want 1 and %q", tc.name, r.code, r.stderr, tc.want)
+		}
+	}
+	if e.read("work/oncall.md") != body {
+		t.Errorf("a refused --at changed the file:\n%s", e.read("work/oncall.md"))
+	}
+
+	if id := strings.TrimSpace(e.mustRun("id", "--at", path+":2").stdout); len(id) == 0 {
+		t.Errorf("id --at printed no id")
+	}
+	if !strings.Contains(e.read("work/oncall.md"), "- [ ] fix bug in login 🆔 ") {
+		t.Errorf("id --at did not stamp line 2:\n%s", e.read("work/oncall.md"))
+	}
+}
+
+// Each JSON task names the headings it sits under, outermost first, so a
+// caller can group tasks the way human `ls` does.
+func TestLsJSONHeadings(t *testing.T) {
+	e := newEnv(t)
+	e.init()
+	e.write("work/inbox.md", "- [ ] loose\n# Oncall\n## Later\n- [ ] nested\n")
+
+	var tasks []map[string]any
+	if err := json.Unmarshal([]byte(e.mustRun("ls", "--json").stdout), &tasks); err != nil {
+		t.Fatal(err)
+	}
+	if len(tasks) != 2 {
+		t.Fatalf("want 2 tasks, got %v", tasks)
+	}
+	if _, ok := tasks[0]["headings"]; ok {
+		t.Errorf("a task under no heading has headings %v", tasks[0]["headings"])
+	}
+	if got, _ := json.Marshal(tasks[1]["headings"]); string(got) != `["Oncall","Later"]` {
+		t.Errorf("headings = %s", got)
+	}
+}
+
+// `_lists --json` names every list with all its sections, empty ones too, so a
+// program can offer each place `add -l` can write to.
+func TestListsJSON(t *testing.T) {
+	e := newEnv(t)
+	if r := e.run("_lists", "--json"); r.code != 4 {
+		t.Errorf("before init: exit %d, want 4", r.code)
+	}
+	e.init()
+	e.write("work/oncall.md", "<!-- tuido: capture=Now -->\n# Now\n- [ ] a\n# Later\n")
+
+	var lists []map[string]any
+	if err := json.Unmarshal([]byte(e.mustRun("_lists", "--json").stdout), &lists); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := json.Marshal(lists)
+	for _, want := range []string{`"list":"inbox","path":`, `"sections":[]`, `"capture":"Now","list":"oncall"`, `"sections":["Now","Later"]`} {
+		if !strings.Contains(string(got), want) {
+			t.Errorf("missing %s in %s", want, got)
+		}
+	}
+	e.mustRun("add", "b", "-l", "work/oncall/Later")
+	if !strings.Contains(e.read("work/oncall.md"), "# Later\n- [ ] b ➕ 20") {
+		t.Errorf("add -l ws/list/section:\n%s", e.read("work/oncall.md"))
+	}
+}

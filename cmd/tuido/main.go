@@ -68,7 +68,7 @@ func run(args []string) int {
 		err = cmdUpgrade(rest)
 	case "show": // undocumented: the fzf preview helper
 		err = cmdShow(rest)
-	case "_lists", "_workspaces": // undocumented: shell completion helpers
+	case "_lists", "_workspaces": // undocumented: shell completion helpers; `_lists --json` for add destinations
 		err = cmdNames(cmd, rest)
 	case "_commit": // undocumented: commit-and-push one file, for editor save hooks
 		err = cmdCommit(rest)

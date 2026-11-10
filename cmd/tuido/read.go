@@ -97,6 +97,7 @@ type jsonTask struct {
 	List        string   `json:"list"`
 	Path        string   `json:"path"`
 	Line        int      `json:"line"`
+	Headings    []string `json:"headings,omitempty"`
 	State       string   `json:"state"`
 	Desc        string   `json:"desc"`
 	Priority    string   `json:"priority"`
@@ -125,6 +126,7 @@ func writeTasksJSON(w io.Writer, lists []store.List, groups []render.Group, toda
 				List:        l.Name,
 				Path:        t.Path,
 				Line:        t.Line,
+				Headings:    headingTexts(g.Headings[t.Line]),
 				State:       t.State.String(),
 				Desc:        t.Desc,
 				Priority:    t.Priority.String(),
@@ -145,6 +147,18 @@ func writeTasksJSON(w io.Writer, lists []store.List, groups []render.Group, toda
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(out)
+}
+
+// headingTexts is the heading hierarchy a task sits under, outermost first.
+func headingTexts(path []task.Heading) []string {
+	if len(path) == 0 {
+		return nil
+	}
+	out := make([]string, len(path))
+	for i, h := range path {
+		out[i] = h.Text
+	}
+	return out
 }
 
 func dateStr(d *task.Date) string {
@@ -259,9 +273,15 @@ func cmdUse(args []string) error {
 
 // cmdNames feeds the zsh completion. It prints one name per line and stays
 // silent when tuido is not set up, so completion never spews errors into the
-// prompt.
+// prompt. `_lists --json` is for programs, so it reports errors like any command.
 func cmdNames(which string, args []string) error {
 	st, err := store.Open(store.Options{})
+	if which == "_lists" && len(args) == 1 && args[0] == "--json" {
+		if err != nil {
+			return err
+		}
+		return writeListsJSON(os.Stdout, st)
+	}
 	if err != nil {
 		return nil
 	}
@@ -281,6 +301,35 @@ func cmdNames(which string, args []string) error {
 		}
 	}
 	return nil
+}
+
+// jsonList is one list as `_lists --json` reports it, for programs that offer
+// a destination for `tuido add -l`: its sections, including empty ones, and the
+// section a bare `-l <list>` captures into, if the file names one.
+type jsonList struct {
+	Workspace string   `json:"workspace"`
+	List      string   `json:"list"`
+	Path      string   `json:"path"`
+	Sections  []string `json:"sections"`
+	Capture   string   `json:"capture,omitempty"`
+}
+
+func writeListsJSON(w io.Writer, st *store.Store) error {
+	out := make([]jsonList, 0)
+	for _, l := range st.AllLists() {
+		f, err := st.Read(l)
+		if err != nil {
+			return err
+		}
+		sections := f.Sections()
+		if sections == nil {
+			sections = []string{}
+		}
+		out = append(out, jsonList{Workspace: l.Workspace, List: l.Name, Path: l.Path, Sections: sections, Capture: f.Marker.Capture})
+	}
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(out)
 }
 
 // cmdShow is the fzf preview helper: print the block around a locator.
