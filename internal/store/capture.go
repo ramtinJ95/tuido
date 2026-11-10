@@ -41,10 +41,25 @@ func (e *ErrAmbiguousList) Error() string {
 //
 // The spec may name a list ("oncall"), a nested list ("archive/2026"), or a
 // list and a section ("oncall/now"). Lists win over sections: a real file is
-// never shadowed by a heading with the same name.
+// never shadowed by a heading with the same name. Exact names win over fuzzy
+// ones, so "work/oncall/Work" is that section even though every word of it also
+// appears in the ref work/oncall.
 func (s *Store) ResolveTarget(spec string, all bool) (Target, error) {
 	if spec == "" {
 		return s.defaultTarget()
+	}
+
+	scope, err := s.Scope(all)
+	if err != nil {
+		return Target{}, err
+	}
+	if exact := exactLists(scope, spec); len(exact) == 1 {
+		return Target{List: exact[0]}, nil
+	}
+	if listPart, section, ok := cutLast(spec, "/"); ok {
+		if exact := exactLists(scope, listPart); len(exact) == 1 && len(exactLists(scope, spec)) == 0 {
+			return Target{List: exact[0], Section: section}, nil
+		}
 	}
 
 	if lists, err := s.FindLists(spec, all); err != nil {

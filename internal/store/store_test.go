@@ -184,6 +184,15 @@ func TestResolveTargetSectionFallback(t *testing.T) {
 	if _, err := s.ResolveTarget("nope", false); err == nil {
 		t.Error("unknown list did not error")
 	}
+
+	// An exact list and section beat a fuzzy list match on all the words.
+	tgt, err = s.ResolveTarget("work/oncall/work", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tgt.List.Ref() != "work/oncall" || tgt.Section != "work" {
+		t.Errorf("target = %+v, want section work of work/oncall", tgt)
+	}
 }
 
 func TestInsertPointRules(t *testing.T) {
