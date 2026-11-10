@@ -314,3 +314,62 @@ func firstNonEmpty(in ...string) string {
 	}
 	return ""
 }
+
+// ErrListName is a user error: a name CreateList cannot use.
+type ErrListName struct {
+	Name   string
+	Reason string
+}
+
+func (e *ErrListName) Error() string {
+	return fmt.Sprintf("cannot create list %q: %s", e.Name, e.Reason)
+}
+
+// CreateList makes an empty list in the current workspace. A name may nest
+// ("archive/2026"), but may not climb out of the workspace, hide behind a dot,
+// sit in the archive mirror, or replace a list that is already there.
+func (s *Store) CreateList(name string) (List, error) {
+	dir, err := s.WorkspaceDir()
+	if err != nil {
+		return List{}, err
+	}
+	name = strings.TrimSuffix(strings.Trim(strings.TrimSpace(filepath.ToSlash(name)), "/"), ".md")
+	if reason := badListName(name); reason != "" {
+		return List{}, &ErrListName{Name: name, Reason: reason}
+	}
+	l := List{Workspace: s.workspace, Name: name, Path: filepath.Join(dir, filepath.FromSlash(name)+".md")}
+	if err := os.MkdirAll(filepath.Dir(l.Path), 0o755); err != nil {
+		return List{}, err
+	}
+	// O_EXCL, so a list made in the meantime by an editor or a sync is never truncated.
+	f, err := os.OpenFile(l.Path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if errors.Is(err, fs.ErrExist) {
+		return List{}, &ErrListName{Name: l.Ref(), Reason: "it already exists"}
+	}
+	if err != nil {
+		return List{}, err
+	}
+	return l, f.Close()
+}
+
+func badListName(name string) string {
+	if name == "" {
+		return "the name is empty"
+	}
+	if strings.ContainsAny(name, "\\\x00") {
+		return "names use / to nest, and no backslash"
+	}
+	for i, seg := range strings.Split(name, "/") {
+		switch {
+		case seg == "":
+			return "it has an empty path segment"
+		case seg == "." || seg == "..":
+			return "it would leave the workspace"
+		case strings.HasPrefix(seg, "."):
+			return "a name starting with a dot is skipped as hidden"
+		case i == 0 && seg == archiveDir:
+			return archiveDir + "/ holds the archive mirrors"
+		}
+	}
+	return ""
+}

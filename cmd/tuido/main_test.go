@@ -804,3 +804,23 @@ func TestListsJSON(t *testing.T) {
 		t.Errorf("add -l ws/list/section:\n%s", e.read("work/oncall.md"))
 	}
 }
+
+// `new` makes an empty list `add -l` can write to at once, and refuses to
+// replace one.
+func TestNewList(t *testing.T) {
+	e := newEnv(t)
+	e.init()
+	if out := e.mustRun("new", "projects/migration").stdout; !strings.Contains(out, "✓ new list work/projects/migration") {
+		t.Errorf("new said %q", out)
+	}
+	e.mustRun("add", "cut over", "-l", "work/projects/migration")
+	if !strings.HasPrefix(e.read("work/projects/migration.md"), "- [ ] cut over ➕ ") {
+		t.Errorf("add to the new list:\n%s", e.read("work/projects/migration.md"))
+	}
+	if r := e.run("new", "projects/migration"); r.code != 1 || !strings.Contains(r.stderr, "already exists") {
+		t.Errorf("existing list: exit %d, %q", r.code, r.stderr)
+	}
+	if r := e.run("new"); r.code != 1 {
+		t.Errorf("no name: exit %d", r.code)
+	}
+}

@@ -20,6 +20,7 @@ _tuido() {
     'init:first-run setup'
     'add:capture a task'
     'done:mark a task done'
+    'new:create an empty list'
     'archive:sweep closed tasks into the archive mirror'
     'sort:reorder tasks within their blocks'
     'fmt:expand shorthand into canonical fields'
@@ -51,7 +52,7 @@ _tuido() {
       ;;
     args)
       local selected=$words[1]
-      if [[ $selected != (init|add|a|done|d|archive|sort|fmt|ls|list|open|o|path|use|sync|id|agents|upgrade|help|version) ]]; then
+      if [[ $selected != (init|add|a|done|d|new|archive|sort|fmt|ls|list|open|o|path|use|sync|id|agents|upgrade|help|version) ]]; then
         if (( CURRENT == 2 )); then
           _describe -t commands 'scoped command' scoped_commands
           return

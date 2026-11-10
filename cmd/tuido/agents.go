@@ -55,6 +55,7 @@ operations, and direct file edits for bulk changes.
     tuido done --at <path:line> <desc> mark exactly that task done (path/line from --json)
     tuido id <words…>                  print a task's stable id, assigning one if needed
     tuido path <list>                  print a list's absolute file path
+    tuido new <list>                   create an empty list (nest with /)
     tuido fmt [list]                   expand :p1 / :due / :done shorthand (idempotent)
     tuido sort [list]                  reorder: open before done, then priority and due (idempotent)
     tuido archive [list] [--dry-run]   move closed tasks to the list's _archive mirror

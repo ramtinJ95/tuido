@@ -175,6 +175,7 @@ up the newest tag.
 |---|---|
 | `tuido add [flags] <text…>` | capture a task (`-p` prio, `-d` due, `-t` tag, `-l` list) |
 | `tuido done <fuzzy…> \| --at <path:line>` | mark a task done |
+| `tuido new <list>` | create an empty list |
 | `tuido archive [list] [--dry-run]` | sweep closed tasks into the list's `_archive/` mirror |
 | `tuido ls [list] [--all] [--json] [--archived]` | show actionable tasks |
 | `tuido sort [list] [--by …]` | reorder tasks within their blocks |
