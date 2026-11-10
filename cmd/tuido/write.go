@@ -180,12 +180,11 @@ func runEditor(args ...string) error {
 // so the diff stays one line.
 func cmdDone(args []string) error {
 	fs := newFlagSet("done")
-	fl := registerScope(fs)
+	fl := registerTarget(fs)
 	if err := fs.Parse(args); err != nil {
 		return flagErr(err)
 	}
-	all := fl.all
-	if fs.NArg() == 0 && !match.Interactive() {
+	if *fl.at == "" && fs.NArg() == 0 && !match.Interactive() {
 		return uerr("usage: tuido done <fuzzy text…>  (see `tuido help done`)")
 	}
 
@@ -193,16 +192,7 @@ func cmdDone(args []string) error {
 	if err != nil {
 		return err
 	}
-	lists, err := a.st.Scope(*all)
-	if err != nil {
-		return err
-	}
-	cands, err := a.candidates(lists, true)
-	if err != nil {
-		return err
-	}
-	query := strings.Join(fs.Args(), " ")
-	hit, err := match.Resolve(cands, query)
+	hit, lists, err := a.pick(*fl.at, strings.Join(fs.Args(), " "), *fl.all, true)
 	if err != nil {
 		return err
 	}
@@ -235,27 +225,18 @@ func cmdDone(args []string) error {
 // called automatically: this is the opt-in escape hatch.
 func cmdID(args []string) error {
 	fs := newFlagSet("id")
-	fl := registerScope(fs)
+	fl := registerTarget(fs)
 	if err := fs.Parse(args); err != nil {
 		return flagErr(err)
 	}
-	all := fl.all
-	if fs.NArg() == 0 && !match.Interactive() {
+	if *fl.at == "" && fs.NArg() == 0 && !match.Interactive() {
 		return uerr("usage: tuido id <fuzzy text…>  (see `tuido help id`)")
 	}
 	a, err := openApp(*fl.root, *fl.ws)
 	if err != nil {
 		return err
 	}
-	lists, err := a.st.Scope(*all)
-	if err != nil {
-		return err
-	}
-	cands, err := a.candidates(lists, false)
-	if err != nil {
-		return err
-	}
-	hit, err := match.Resolve(cands, strings.Join(fs.Args(), " "))
+	hit, _, err := a.pick(*fl.at, strings.Join(fs.Args(), " "), *fl.all, false)
 	if err != nil {
 		return err
 	}
@@ -310,6 +291,66 @@ func cmdCommit(args []string) error {
 	}
 	a.commit("edit: "+strings.TrimSuffix(filepath.ToSlash(rel), ".md"), path)
 	return nil
+}
+
+// pick resolves the one task a command acts on: the task --at names, else the
+// single fuzzy match in scope. It also returns the lists whose open ids decide
+// whether that task is blocked.
+func (a *app) pick(at, query string, all, openOnly bool) (match.Candidate, []store.List, error) {
+	if at != "" {
+		hit, l, err := a.locate(at, query, openOnly)
+		if err != nil {
+			return match.Candidate{}, nil, err
+		}
+		return hit, a.st.Lists(l.Workspace), nil
+	}
+	lists, err := a.st.Scope(all)
+	if err != nil {
+		return match.Candidate{}, nil, err
+	}
+	cands, err := a.candidates(lists, openOnly)
+	if err != nil {
+		return match.Candidate{}, nil, err
+	}
+	hit, err := match.Resolve(cands, query)
+	return hit, lists, err
+}
+
+// locate is --at: the task on one line of one list, for callers that already
+// know where it is, such as a panel showing `ls --json`. Text, when given, must
+// still match that task, so a line number gone stale since the caller read the
+// file is refused instead of acting on whatever moved into its place.
+func (a *app) locate(at, query string, openOnly bool) (match.Candidate, store.List, error) {
+	path, line, err := match.ParseLocator(at)
+	if err != nil {
+		return match.Candidate{}, store.List{}, uerr("--at: %v", err)
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return match.Candidate{}, store.List{}, err
+	}
+	for _, l := range a.st.AllLists() {
+		if l.Path != abs {
+			continue
+		}
+		f, err := a.st.Read(l)
+		if err != nil {
+			return match.Candidate{}, store.List{}, err
+		}
+		if line < 1 || line > len(f.Lines) || f.Lines[line-1].Task == nil {
+			return match.Candidate{}, store.List{}, uerr("line %d of %s is not a task", line, l.Ref())
+		}
+		c := match.Candidate{Task: f.Lines[line-1].Task, Ref: l.Ref()}
+		if openOnly && c.Task.State.Closed() {
+			return match.Candidate{}, store.List{}, uerr("%s is already %s (%s, line %d)", c.Task.Desc, c.Task.State, l.Ref(), line)
+		}
+		if query != "" && len(match.Find([]match.Candidate{c}, query)) == 0 {
+			return match.Candidate{}, store.List{}, uerr("line %d of %s is %q, not %q — the file changed since it was read",
+				line, l.Ref(), c.Task.Desc, query)
+		}
+		return c, l, nil
+	}
+	return match.Candidate{}, store.List{}, uerr("--at: %s is not a list under %s", path, a.st.Root)
 }
 
 // reread re-parses the file the match came from and returns the same task from

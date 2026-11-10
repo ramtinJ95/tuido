@@ -79,11 +79,16 @@ var helps = map[string]help{
 		summary: "mark a task done",
 		synopsis: []string{
 			"tuido done <fuzzy text…>",
+			"tuido done --at <path:line> [text…]",
 		},
 		notes: []string{
 			"Every token must appear in the task's description. One match acts, zero",
 			"errors, several open an fzf picker — or, with no terminal, print the",
 			"candidates and exit 1 without changing anything.",
+			"",
+			"--at names the task exactly, by the path and line `ls --json` reports.",
+			"Text given with it must still match that task, so a line that changed",
+			"since it was read is refused rather than completed.",
 			"",
 			"Sets the state and stamps a completion date. The line is not moved;",
 			"finished work sinks on the next `tuido sort`.",
@@ -91,6 +96,7 @@ var helps = map[string]help{
 		examples: []string{
 			"tuido done vault certs",
 			"tuido done drain --all",
+			"tuido done --at ~/todo/work/oncall.md:4 fix bug",
 		},
 	},
 	"archive": {
@@ -298,11 +304,14 @@ var helps = map[string]help{
 		summary: "stamp a short id on a task",
 		synopsis: []string{
 			"tuido id <fuzzy text…>",
+			"tuido id --at <path:line> [text…]",
 		},
 		notes: []string{
 			"Prints the task's id, assigning one first if it has none. Ids are never",
 			"written automatically; this is the opt-in escape hatch for expressing a",
 			"dependency with the blocked-by field.",
+			"",
+			"--at names the task exactly, as for `tuido done`.",
 		},
 		examples: []string{
 			"tuido id migrate the bastion",

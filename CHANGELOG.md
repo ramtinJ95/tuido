@@ -7,6 +7,22 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+
+- `tuido done --at <path:line> [text…]` and `tuido id --at …` act on exactly
+  the task at that line, for programs that hold `ls --json` output. Text given
+  with it must still match the task, so a stale line is refused.
+- `tuido ls --json` tasks carry `headings`: the Markdown headings each task
+  sits under, outermost first.
+- `tuido _lists --json` reports every list with all its sections, empty ones
+  included, and its capture default: the places `tuido add -l` can write to.
+
+### Fixed
+
+- `tuido add -l <workspace>/<list>/<section>` names that section even when
+  every word of it also appears in the list's ref, instead of fuzzily
+  matching the list and ignoring the section.
+
 ## [0.7.0] - 2026-08-12
 
 ### Added

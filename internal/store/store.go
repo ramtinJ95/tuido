@@ -191,18 +191,11 @@ func matchLists(scope []List, query string) []List {
 	if query == "" {
 		return scope
 	}
-	q := strings.ToLower(strings.TrimSpace(query))
-
-	var exact []List
-	for _, l := range scope {
-		if strings.ToLower(l.Ref()) == q || strings.ToLower(l.Name) == q {
-			exact = append(exact, l)
-		}
-	}
-	if len(exact) > 0 {
+	if exact := exactLists(scope, query); len(exact) > 0 {
 		return exact
 	}
 
+	q := strings.ToLower(strings.TrimSpace(query))
 	tokens := strings.Fields(strings.ReplaceAll(q, "/", " "))
 	var out []List
 	for _, l := range scope {
@@ -215,6 +208,18 @@ func matchLists(scope []List, query string) []List {
 			}
 		}
 		if ok {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// exactLists are the lists whose ref or name is the query, ignoring case.
+func exactLists(scope []List, query string) []List {
+	q := strings.ToLower(strings.TrimSpace(query))
+	var out []List
+	for _, l := range scope {
+		if strings.ToLower(l.Ref()) == q || strings.ToLower(l.Name) == q {
 			out = append(out, l)
 		}
 	}

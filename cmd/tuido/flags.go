@@ -115,6 +115,20 @@ func registerScope(fs *pflag.FlagSet) scopeFlags {
 	}
 }
 
+// targetFlags is for the commands that act on one task: done and id. --at
+// names it exactly, for callers that already know where it is.
+type targetFlags struct {
+	scopeFlags
+	at *string
+}
+
+func registerTarget(fs *pflag.FlagSet) targetFlags {
+	return targetFlags{
+		scopeFlags: registerScope(fs),
+		at:         fs.String("at", "", "act on the task at path:line (as ls --json reports it)"),
+	}
+}
+
 type archiveFlags struct {
 	scopeFlags
 	dryRun *bool
@@ -169,7 +183,9 @@ func registerFlags(name string, fs *pflag.FlagSet) {
 		registerSync(fs)
 	case "use", "agents":
 		registerCommon(fs)
-	case "done", "path", "id", "fmt":
+	case "done", "id":
+		registerTarget(fs)
+	case "path", "fmt":
 		registerScope(fs)
 	case "archive":
 		registerArchive(fs)

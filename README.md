@@ -174,7 +174,7 @@ up the newest tag.
 | | |
 |---|---|
 | `tuido add [flags] <text…>` | capture a task (`-p` prio, `-d` due, `-t` tag, `-l` list) |
-| `tuido done <fuzzy…>` | mark a task done |
+| `tuido done <fuzzy…> \| --at <path:line>` | mark a task done |
 | `tuido archive [list] [--dry-run]` | sweep closed tasks into the list's `_archive/` mirror |
 | `tuido ls [list] [--all] [--json] [--archived]` | show actionable tasks |
 | `tuido sort [list] [--by …]` | reorder tasks within their blocks |
@@ -183,7 +183,7 @@ up the newest tag.
 | `tuido path [query]` | print the resolved file path |
 | `tuido use [workspace]` | switch or show the current workspace |
 | `tuido sync [--status]` | blocking fetch, rebase and push |
-| `tuido id <fuzzy…>` | stamp a short id on a task |
+| `tuido id <fuzzy…> \| --at <path:line>` | stamp a short id on a task |
 | `tuido agents` | print a briefing for coding agents |
 | `tuido upgrade [--check]` | install the latest release |
 | `tuido init` | first-run setup |
@@ -223,11 +223,20 @@ tuido agents >> AGENTS.md
 ```
 
 For structured queries, `tuido ls --json` emits a JSON array of task objects —
-workspace, list, path, line, state, desc, priority, tags, dates, id and
-blocked-by — following the same visibility rules as the human output:
+workspace, list, path, line, headings, state, desc, priority, tags, dates, id
+and blocked-by — following the same visibility rules as the human output:
 
 ```sh
 tuido ls --json --all | jq -r '.[] | select(.hidden == "blocked") | .desc'
+```
+
+A program that shows those tasks can act on exactly one of them with `--at`,
+passing the `path` and `line` it read plus the description. If the line no
+longer holds a task matching that description, tuido refuses and changes
+nothing:
+
+```sh
+tuido done --at ~/todo/work/oncall.md:4 "Fix ALB drain timeout"
 ```
 
 ## How it stores things
