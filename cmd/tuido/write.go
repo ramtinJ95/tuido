@@ -84,6 +84,34 @@ func cmdAdd(args []string) error {
 	return nil
 }
 
+// cmdNew creates an empty list in the workspace, committed like every other
+// change, so a new task has somewhere new to go without opening an editor.
+func cmdNew(args []string) error {
+	fs := newFlagSet("new")
+	fl := registerCommon(fs)
+	if err := fs.Parse(args); err != nil {
+		return flagErr(err)
+	}
+	if fs.NArg() != 1 {
+		return uerr("usage: tuido new <list>  (see `tuido help new`)")
+	}
+	a, err := openApp(*fl.root, *fl.ws)
+	if err != nil {
+		return err
+	}
+	l, err := a.st.CreateList(fs.Arg(0))
+	var bad *store.ErrListName
+	if errors.As(err, &bad) {
+		return uerr("%v", err)
+	}
+	if err != nil {
+		return err
+	}
+	fmt.Printf("✓ new list %s\n", l.Ref())
+	a.commit("new: "+l.Ref(), l.Path)
+	return nil
+}
+
 // resolveTarget picks the destination, offering the picker when a -l value is
 // ambiguous.
 func (a *app) resolveTarget(list string, all bool) (store.Target, error) {

@@ -99,6 +99,23 @@ var helps = map[string]help{
 			"tuido done --at ~/todo/work/oncall.md:4 fix bug",
 		},
 	},
+	"new": {
+		summary: "create an empty list",
+		synopsis: []string{
+			"tuido new <list> [flags]",
+		},
+		notes: []string{
+			"Creates <workspace>/<list>.md, empty, and commits it. A name may nest",
+			"with / (archive/2026, created with its folders); it may not start with",
+			"a dot, sit under _archive/, or name a list that already exists.",
+			"",
+			"Quote a name with spaces. Add headings in your editor to give it sections.",
+		},
+		examples: []string{
+			"tuido new oncall",
+			"tuido new projects/migration -w work",
+		},
+	},
 	"archive": {
 		summary: "sweep closed tasks into the list's archive mirror",
 		synopsis: []string{

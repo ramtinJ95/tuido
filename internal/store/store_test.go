@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -376,4 +377,40 @@ func asErr[T error](err error, target *T) bool {
 		err = u.Unwrap()
 	}
 	return false
+}
+
+func TestCreateList(t *testing.T) {
+	s := setup(t)
+	l, err := s.CreateList(" infra/oncall.md ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l.Ref() != "work/infra/oncall" {
+		t.Errorf("ref = %s", l.Ref())
+	}
+	if b, err := os.ReadFile(l.Path); err != nil || len(b) != 0 {
+		t.Errorf("new list: %q, %v", b, err)
+	}
+	if lists, _ := s.FindLists("work/infra/oncall", false); len(lists) != 1 {
+		t.Errorf("new list not found: %v", refs(lists))
+	}
+
+	for name, want := range map[string]string{
+		"oncall":     "already exists",
+		"":           "empty",
+		"../escape":  "leave the workspace",
+		"a//b":       "empty path segment",
+		".hidden":    "dot",
+		"_archive/x": "archive mirrors",
+		`back\slash`: "backslash",
+	} {
+		_, err := s.CreateList(name)
+		var bad *ErrListName
+		if !errors.As(err, &bad) || !strings.Contains(err.Error(), want) {
+			t.Errorf("CreateList(%q) = %v, want an ErrListName saying %q", name, err, want)
+		}
+	}
+	if b, _ := os.ReadFile(filepath.Join(s.Root, "work", "oncall.md")); !strings.Contains(string(b), "beta") {
+		t.Error("an existing list was overwritten")
+	}
 }

@@ -181,7 +181,7 @@ func registerFlags(name string, fs *pflag.FlagSet) {
 		registerOpen(fs)
 	case "sync":
 		registerSync(fs)
-	case "use", "agents":
+	case "use", "agents", "new":
 		registerCommon(fs)
 	case "done", "id":
 		registerTarget(fs)

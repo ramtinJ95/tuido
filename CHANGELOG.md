@@ -9,6 +9,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Added
 
+- `tuido new <list>` creates an empty list in the workspace, nested with `/`
+  if asked, and commits it.
 - `tuido done --at <path:line> [text…]` and `tuido id --at …` act on exactly
   the task at that line, for programs that hold `ls --json` output. Text given
   with it must still match the task, so a stale line is refused.
